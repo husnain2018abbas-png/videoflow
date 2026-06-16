@@ -1,0 +1,4537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VidiFlow — Video Metadata & Folder Manager</title>
+  <!-- SEO Tags -->
+  <meta name="description" content="Manage local video metadata, tags, and thumbnails efficiently in a multi-folder dashboard. Safe, local, and premium dark theme browser application.">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238b5cf6' stroke-width='2'><path d='m22 8-6 4 6 4V8Z'/><rect width='14' height='12' x='2' y='6' rx='2' ry='2'/></svg>">
+  
+  <!-- Premium Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Stylesheet -->
+  <style>
+/* ==========================================================================
+   VidiFlow Stylesheet - Popup Editor & Sidebar Folder Manager
+   ========================================================================== */
+
+/* --- Design Tokens / Theme Variables --- */
+:root {
+  --bg-primary: #060913;
+  --bg-secondary: #0c1221;
+  --bg-panel: rgba(18, 28, 47, 0.45);
+  --bg-card: rgba(30, 46, 74, 0.3);
+  --bg-card-hover: rgba(99, 102, 241, 0.08);
+  --bg-card-selected: rgba(99, 102, 241, 0.16);
+  --accent-color: #6366f1;
+  --accent-light: #8b5cf6;
+  --accent-hover: #4f46e5;
+  --accent-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  --accent-glow: 0 0 15px rgba(99, 102, 241, 0.35);
+  
+  --text-main: #f1f5f9;
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
+  
+  --border-color: rgba(255, 255, 255, 0.06);
+  --border-color-hover: rgba(255, 255, 255, 0.12);
+  --border-focus: rgba(99, 102, 241, 0.5);
+  
+  --success-color: #10b981;
+  --success-bg: rgba(16, 185, 129, 0.1);
+  --success-border: rgba(16, 185, 129, 0.3);
+  --success-glow: 0 0 15px rgba(16, 185, 129, 0.2);
+  
+  --danger-color: #ef4444;
+  --danger-bg: rgba(239, 68, 68, 0.15);
+  --danger-hover: #dc2626;
+
+  --font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --glass-blur: blur(14px) saturate(180%);
+  --shadow-main: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+  --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.25);
+  --radius-lg: 16px;
+  --radius-md: 10px;
+  --radius-sm: 6px;
+  
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* --- Base Resets & Custom Scrollbars --- */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-main);
+  font-family: var(--font-family);
+  height: 100vh;
+  overflow: hidden;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.3);
+}
+
+/* Global Hidden Class */
+.hidden {
+  display: none !important;
+}
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-image: 
+    radial-gradient(at 10% 20%, rgba(99, 102, 241, 0.08) 0px, transparent 50%),
+    radial-gradient(at 90% 80%, rgba(139, 92, 246, 0.06) 0px, transparent 50%);
+  background-attachment: fixed;
+}
+
+/* Glassmorphism utility */
+.glassmorphism {
+  background: var(--bg-panel);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-main);
+}
+
+/* --- Top Header Navigation --- */
+.app-header {
+  height: 70px;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-color);
+  z-index: 10;
+  flex-shrink: 0;
+}
+
+.header-left .logo-area {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo-icon {
+  background: var(--accent-gradient);
+  color: white;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--accent-glow);
+  transition: transform var(--transition-normal);
+}
+.logo-area:hover .logo-icon {
+  transform: rotate(5deg) scale(1.05);
+}
+.logo-svg {
+  width: 20px;
+  height: 20px;
+}
+
+.logo-text {
+  display: flex;
+  flex-direction: column;
+}
+.logo-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  background: linear-gradient(to right, #ffffff, #c7d2fe);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.logo-tagline {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--accent-light);
+  letter-spacing: 1.5px;
+}
+
+.header-center {
+  flex-grow: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.stats-container {
+  display: flex;
+  gap: 8px;
+}
+.stat-pill {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-color);
+  border-radius: 50px;
+  padding: 6px 16px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  color: var(--text-muted);
+}
+.stat-pill i {
+  width: 14px;
+  height: 14px;
+  margin-right: 6px;
+}
+.stat-label {
+  margin-right: 8px;
+}
+.stat-number {
+  color: var(--success-color);
+  font-weight: 700;
+}
+.stat-divider {
+  margin: 0 4px;
+  color: var(--text-dim);
+}
+.stat-number-total {
+  color: var(--text-main);
+}
+.text-emerald {
+  color: var(--success-color);
+  filter: drop-shadow(0 0 4px rgba(16, 185, 129, 0.3));
+}
+.text-indigo {
+  color: var(--accent-light);
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+/* --- Buttons System --- */
+.btn {
+  font-family: var(--font-family);
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 10px 18px;
+  border-radius: var(--radius-md);
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all var(--transition-fast);
+}
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 0.75rem;
+  border-radius: var(--radius-sm);
+}
+.btn i {
+  width: 16px;
+  height: 16px;
+}
+.w-full {
+  width: 100%;
+}
+
+.btn-primary {
+  background: var(--accent-gradient);
+  color: white;
+  box-shadow: var(--accent-glow);
+}
+.btn-primary:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.1);
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.5);
+}
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
+}
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--border-color-hover);
+}
+
+.btn-success {
+  background: var(--success-color);
+  color: white;
+  box-shadow: var(--success-glow);
+}
+.btn-success:hover {
+  background: #059669;
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+}
+
+.btn-danger {
+  background: var(--danger-bg);
+  color: var(--danger-color);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+.btn-danger:hover {
+  background: var(--danger-color);
+  color: white;
+  border-color: transparent;
+}
+
+.icon-btn-secondary {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+.icon-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-main);
+  border-color: var(--border-color-hover);
+}
+.icon-btn-secondary i {
+  width: 18px;
+  height: 18px;
+}
+
+.btn-icon-only {
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
+}
+.icon-only-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-md);
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* --- Workspace Layout Grid --- */
+.workspace-grid {
+  display: grid;
+  grid-template-columns: 290px 1fr;
+  flex-grow: 1;
+  gap: 16px;
+  padding: 16px;
+  height: calc(100vh - 70px);
+  overflow: hidden;
+}
+
+/* Panels */
+.panel {
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  height: 100%;
+}
+.panel-header {
+  padding: 16px;
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+.panel-content {
+  flex-grow: 1;
+  position: relative;
+}
+.scrollable {
+  overflow-y: auto;
+}
+
+/* --- Sidebar Panel (Folder Manager) --- */
+.sidebar-panel {
+  background: rgba(12, 18, 33, 0.5);
+  border: 1px solid var(--border-color);
+}
+.sidebar-header {
+  padding: 20px 16px 14px 16px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.sidebar-header-icon {
+  color: var(--accent-light);
+  width: 18px;
+  height: 18px;
+}
+.sidebar-header h3 {
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-main);
+}
+.sidebar-content {
+  flex-grow: 1;
+}
+.sidebar-footer {
+  padding: 16px;
+  border-top: 1px solid var(--border-color);
+}
+
+/* Folder List Details */
+.folders-list {
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+  gap: 4px;
+}
+.folders-empty-text {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  text-align: center;
+  padding: 24px 8px;
+}
+
+.folder-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+}
+.folder-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--border-color-hover);
+}
+.folder-item-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.folder-item-info i {
+  color: var(--text-muted);
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+.folder-item-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.folder-item-badge {
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  color: #a5b4fc;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  margin-left: 4px;
+  flex-shrink: 0;
+}
+
+.remove-folder-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+.remove-folder-btn:hover {
+  background: var(--danger-bg);
+  color: var(--danger-color);
+}
+.remove-folder-btn i {
+  width: 14px;
+  height: 14px;
+}
+
+/* Folder authorization warnings */
+.reauth-warning {
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: var(--radius-md);
+  margin: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.reauth-warning p {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #fcd34d;
+  line-height: 1.4;
+}
+
+/* --- Media Explorer & Cards Grid --- */
+.search-wrapper {
+  position: relative;
+  margin-bottom: 14px;
+}
+.search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-dim);
+  width: 16px;
+  height: 16px;
+  pointer-events: none;
+}
+#search-input {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 11px 16px 11px 40px;
+  color: var(--text-main);
+  font-family: var(--font-family);
+  font-size: 0.85rem;
+  outline: none;
+  transition: all var(--transition-fast);
+}
+#search-input:focus {
+  border-color: var(--border-focus);
+  background: rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+.clear-btn {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.clear-btn:hover { color: var(--text-main); }
+.clear-btn i { width: 16px; height: 16px; }
+
+.filters-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+.filter-chips {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  flex-grow: 1;
+}
+.filter-chips::-webkit-scrollbar { display: none; }
+.chip {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  font-family: var(--font-family);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 50px;
+  cursor: pointer;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all var(--transition-fast);
+}
+.chip i { width: 12px; height: 12px; }
+.chip:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text-main);
+  border-color: var(--border-color-hover);
+}
+.chip.active {
+  background: var(--accent-gradient);
+  border-color: transparent;
+  color: white;
+  box-shadow: var(--accent-glow);
+}
+
+.select-input {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  border-radius: var(--radius-sm);
+  padding: 5px 8px;
+  font-family: var(--font-family);
+  font-size: 0.75rem;
+  font-weight: 500;
+  outline: none;
+  cursor: pointer;
+}
+
+/* Empty States & Onboarding Layout */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 24px;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* Background Skeleton Layout */
+.skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+  padding: 16px;
+  opacity: 0.15;
+  filter: blur(1px);
+  pointer-events: none;
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+.skeleton-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.skeleton-thumbnail {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-sm);
+  position: relative;
+  overflow: hidden;
+}
+.skeleton-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.skeleton-line {
+  height: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+}
+.skeleton-line.short { width: 55%; }
+.skeleton-line.long { width: 85%; }
+.skeleton-badges {
+  display: flex;
+  gap: 4px;
+}
+.skeleton-badge {
+  width: 24px;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 3px;
+}
+
+/* Skeleton Loading Shine Animation */
+.skeleton-thumbnail::after, .skeleton-line::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.035), transparent);
+  animation: skeleton-loading 1.6s infinite;
+}
+@keyframes skeleton-loading {
+  100% { transform: translateX(100%); }
+}
+
+/* Floating Onboarding Card */
+.onboarding-card {
+  position: relative;
+  z-index: 5;
+  background: rgba(10, 16, 28, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: var(--radius-lg);
+  padding: 32px;
+  width: 90%;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  box-shadow: var(--shadow-main);
+  gap: 16px;
+}
+.onboarding-logo {
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-light);
+  box-shadow: var(--accent-glow);
+  margin-bottom: 4px;
+}
+.onboarding-logo i {
+  width: 26px;
+  height: 26px;
+}
+.onboarding-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--text-main);
+  letter-spacing: 0.3px;
+}
+.onboarding-desc {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+.drop-zone {
+  border: 2px dashed rgba(99, 102, 241, 0.25);
+  background: rgba(99, 102, 241, 0.02);
+  border-radius: var(--radius-md);
+  padding: 24px 16px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+}
+.drop-zone:hover, .drop-zone.dragover {
+  border-color: var(--accent-color);
+  background: rgba(99, 102, 241, 0.06);
+  box-shadow: var(--accent-glow);
+}
+.drop-icon {
+  width: 32px;
+  height: 32px;
+  color: var(--accent-light);
+}
+.drop-zone span {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.onboarding-formats {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  margin-top: 4px;
+}
+.format-pill {
+  font-size: 0.65rem;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-color);
+  padding: 2px 8px;
+  border-radius: 4px;
+  color: var(--text-dim);
+}
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .4; }
+}
+
+/* Responsive Grid Cards */
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+  padding: 16px;
+}
+
+/* Video Card Grid Item */
+.video-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  cursor: pointer;
+  position: relative;
+  transition: all var(--transition-normal);
+  user-select: none;
+  overflow: hidden;
+}
+.video-card:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-color-hover);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-card);
+}
+
+.card-thumbnail-wrapper {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  position: relative;
+  background: #000;
+  flex-shrink: 0;
+}
+.card-thumbnail {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--transition-normal);
+}
+.video-card:hover .card-thumbnail {
+  transform: scale(1.05);
+}
+
+.card-thumbnail-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #1e293b, #0f172a);
+  color: var(--text-dim);
+}
+.card-thumbnail-fallback i {
+  width: 24px;
+  height: 24px;
+  margin-bottom: 2px;
+}
+.card-thumbnail-fallback span {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+/* Ticks & badges overlays */
+.copied-checkmark-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: var(--success-color);
+  color: white;
+  width: 20px;
+  height: 20px;
+  border-radius: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--success-glow);
+  opacity: 0;
+  transform: scale(0.6);
+  transition: all var(--transition-normal);
+  z-index: 2;
+}
+.copied-checkmark-badge.visible {
+  opacity: 1;
+  transform: scale(1);
+}
+.copied-checkmark-badge i {
+  width: 12px;
+  height: 12px;
+  stroke-width: 3;
+}
+
+/* Hover Deletion button on Video Card */
+.card-remove-btn {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: scale(0.7);
+  transition: all var(--transition-normal);
+  z-index: 2;
+  cursor: pointer;
+}
+.card-remove-btn:hover {
+  background: var(--danger-color);
+  color: white;
+  border-color: transparent;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
+}
+.video-card:hover .card-remove-btn {
+  opacity: 1;
+  transform: scale(1);
+}
+.card-remove-btn i {
+  width: 13px;
+  height: 13px;
+}
+
+.card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.card-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.card-filename {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.card-custom-title {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--accent-light);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.card-meta-indicators {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.meta-indicator {
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-color);
+  color: var(--text-dim);
+}
+.meta-indicator.active {
+  background: rgba(99, 102, 241, 0.12);
+  border-color: rgba(99, 102, 241, 0.25);
+  color: #a5b4fc;
+}
+
+/* --- OVERLAY MODAL EDITOR (POPUP) --- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 6, 12, 0.75);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  opacity: 1;
+  transition: opacity var(--transition-normal);
+}
+.modal-overlay.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Large editor popup frame */
+.modal-editor-content {
+  width: 92vw;
+  max-width: 1200px;
+  height: 88vh;
+  max-height: 820px;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transform: translateY(0);
+  transition: transform var(--transition-normal);
+}
+.modal-overlay.hidden .modal-editor-content {
+  transform: translateY(-20px);
+}
+
+.modal-editor-header {
+  height: 64px;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+.editor-header-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.editor-header-title i {
+  width: 20px;
+  height: 20px;
+}
+.editor-header-title h2 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 450px;
+  cursor: pointer;
+}
+.editor-header-title h2:hover {
+  color: var(--accent-light);
+}
+
+.modal-editor-body {
+  flex-grow: 1;
+  padding: 24px;
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 24px;
+}
+
+/* Column layouts */
+.editor-col-left, .editor-col-right {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.video-preview-card {
+  background: #000;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-card);
+  flex-shrink: 0;
+}
+.video-actions-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: rgba(12, 18, 33, 0.6);
+  border-top: 1px solid var(--border-color);
+}
+.player-wrapper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+}
+.player-wrapper video {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.video-filesize-badge {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+}
+
+/* Sections inside popups */
+.section-card {
+  background: rgba(12, 18, 33, 0.4);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+}
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-color);
+}
+.section-title i {
+  color: var(--accent-light);
+  width: 18px;
+  height: 18px;
+}
+.section-title h3 {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+/* Custom Thumbnail Section */
+.thumbnail-flex {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+.thumbnail-preview-box {
+  width: 160px;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius-md);
+  border: 2px dashed var(--border-color);
+  position: relative;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all var(--transition-normal);
+}
+.thumbnail-preview-box.dragover {
+  border-color: var(--accent-color);
+  background: rgba(99, 102, 241, 0.05);
+}
+.thumbnail-preview-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  cursor: pointer;
+  transition: transform var(--transition-normal);
+}
+.thumbnail-preview-box img:hover {
+  transform: scale(1.04);
+}
+.thumbnail-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-dim);
+  text-align: center;
+}
+.thumbnail-placeholder i { width: 24px; height: 24px; }
+.thumbnail-placeholder span { font-size: 0.65rem; font-weight: 600; }
+
+.drop-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(9, 14, 25, 0.85);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-fast);
+}
+.thumbnail-preview-box.dragover .drop-overlay { opacity: 1; }
+.drop-icon-pulse {
+  color: var(--accent-color);
+  animation: bounce 1s infinite alternate;
+}
+@keyframes bounce {
+  from { transform: translateY(-3px); }
+  to { transform: translateY(3px); }
+}
+
+.thumbnail-actions { flex-grow: 1; }
+.section-help-text {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin-bottom: 10px;
+}
+.btn-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* --- Form Fields & Inputs --- */
+.form-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.form-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.form-label-row label {
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+.char-counter {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+.input-action-wrapper {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.input-action-wrapper.align-start { align-items: flex-start; }
+
+.form-control {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  border-radius: var(--radius-md);
+  font-family: var(--font-family);
+  font-size: 0.85rem;
+  outline: none;
+  transition: all var(--transition-fast);
+}
+.form-control:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+  background: rgba(0, 0, 0, 0.45);
+}
+.text-input {
+  width: 100%;
+  padding: 10px 14px;
+}
+.textarea-input {
+  width: 100%;
+  padding: 10px 14px;
+  resize: vertical;
+}
+
+/* Tag chips editor */
+.tags-input-container {
+  width: 100%;
+  min-height: 42px;
+  padding: 6px 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  cursor: text;
+}
+.tags-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag-chip {
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  color: #c7d2fe;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 8px 3px 10px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.tag-remove {
+  background: transparent;
+  border: none;
+  color: var(--accent-light);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tag-remove:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: var(--danger-color);
+}
+.tag-remove i { width: 12px; height: 12px; }
+
+#tags-input-element {
+  background: transparent;
+  border: none;
+  color: var(--text-main);
+  outline: none;
+  font-family: var(--font-family);
+  font-size: 0.82rem;
+  flex-grow: 1;
+  min-width: 100px;
+  padding: 4px 0;
+}
+.field-hint {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+}
+
+/* Modal editor footer */
+.modal-editor-footer {
+  height: 70px;
+  padding: 0 24px;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* Toggle Switches */
+.auto-save-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.switch-container {
+  position: relative;
+  display: inline-block;
+  width: 36px;
+  height: 20px;
+}
+.switch-container input { opacity: 0; width: 0; height: 0; }
+.switch-slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  transition: var(--transition-normal);
+}
+.switch-slider:before {
+  position: absolute;
+  content: "";
+  height: 12px;
+  width: 12px;
+  left: 3px;
+  bottom: 3px;
+  background-color: var(--text-muted);
+  border-radius: 50%;
+  transition: var(--transition-normal);
+}
+.switch-container input:checked + .switch-slider {
+  background-color: var(--success-color);
+  border-color: transparent;
+}
+.switch-container input:checked + .switch-slider:before {
+  transform: translateX(16px);
+  background-color: white;
+}
+.switch-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.editor-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.save-status-indicator {
+  font-size: 0.75rem;
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity var(--transition-normal);
+}
+.save-status-indicator.visible { opacity: 1; }
+.save-status-indicator.success { color: var(--success-color); }
+.save-status-indicator.info { color: var(--accent-light); }
+
+/* --- Floating Toasts --- */
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 1000;
+  pointer-events: none;
+}
+.toast {
+  background: rgba(18, 28, 47, 0.9);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--border-color);
+  border-left: 4px solid var(--accent-color);
+  color: var(--text-main);
+  padding: 12px 20px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-main);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  pointer-events: auto;
+  animation: slide-in 0.3s cubic-bezier(0.16, 1, 0.3, 1), fade-out 0.2s ease-out 2.8s forwards;
+  min-width: 250px;
+  max-width: 380px;
+}
+.toast.toast-success { border-left-color: var(--success-color); }
+.toast.toast-error { border-left-color: var(--danger-color); }
+.toast.toast-info { border-left-color: var(--accent-color); }
+.toast-icon { flex-shrink: 0; width: 18px; height: 18px; }
+.toast.toast-success .toast-icon { color: var(--success-color); }
+.toast.toast-error .toast-icon { color: var(--danger-color); }
+.toast.toast-info .toast-icon { color: var(--accent-color); }
+.toast-message { font-size: 0.8rem; font-weight: 600; }
+
+@keyframes slide-in {
+  from { transform: translateX(120%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+@keyframes fade-out {
+  to { opacity: 0; transform: translateY(-10px); }
+}
+
+/* Shortcuts Dialog content */
+.modal-content {
+  width: 100%;
+  max-width: 440px;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.modal-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.modal-header h3 { font-size: 1rem; font-weight: 700; }
+.modal-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.shortcut-item {
+  display: flex;
+  align-items: center;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.kbd {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: var(--text-main);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.3);
+  margin-right: 4px;
+}
+.kbd:nth-of-type(2) { margin-left: 4px; }
+.shortcut-desc { margin-left: auto; font-weight: 500; }
+
+/* Copy flash effect */
+@keyframes flash-green {
+  0% { box-shadow: 0 0 0 0px rgba(16, 185, 129, 0.7); }
+  100% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+}
+.flash-success {
+  animation: flash-green 0.5s ease-out;
+}
+
+/* --- LIGHTBOX MODAL --- */
+.lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 6, 12, 0.9);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  opacity: 1;
+  transition: opacity var(--transition-normal);
+}
+.lightbox-overlay.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+.lightbox-content {
+  position: relative;
+  max-width: 90vw;
+  max-height: 75vh;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+  box-shadow: var(--shadow-main);
+  background: #000;
+}
+.lightbox-img {
+  display: block;
+  max-width: 100%;
+  max-height: 75vh;
+  object-fit: contain;
+}
+.lightbox-toolbar {
+  margin-top: 16px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.lightbox-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-main);
+  text-align: center;
+  max-width: 80vw;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* --- Internet Status Indicator --- */
+.internet-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 50px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  transition: all var(--transition-normal);
+  border: 1px solid var(--border-color);
+}
+.internet-status .status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  transition: all var(--transition-normal);
+  flex-shrink: 0;
+}
+.internet-status.online {
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.25);
+  color: var(--success-color);
+}
+.internet-status.online .status-dot {
+  background: var(--success-color);
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+.internet-status.offline {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.25);
+  color: var(--danger-color);
+}
+.internet-status.offline .status-dot {
+  background: var(--danger-color);
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.85); }
+}
+
+/* --- Cloud Card Badge Overlay --- */
+.cloud-badge {
+  position: absolute;
+  bottom: 6px;
+  left: 6px;
+  background: rgba(59, 130, 246, 0.85);
+  backdrop-filter: blur(6px);
+  color: white;
+  font-size: 0.55rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  z-index: 2;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.35);
+}
+.cloud-badge i {
+  width: 10px;
+  height: 10px;
+}
+
+/* --- Cloud Links Sidebar Section --- */
+.sidebar-divider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 4px 8px;
+}
+.cloud-section-header {
+  padding: 14px 16px 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.cloud-section-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.cloud-section-header-left i {
+  color: #60a5fa;
+  width: 16px;
+  height: 16px;
+}
+.cloud-section-header-left h4 {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.cloud-links-list {
+  display: flex;
+  flex-direction: column;
+  padding: 0 8px 8px 8px;
+  gap: 4px;
+}
+.cloud-link-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: rgba(59, 130, 246, 0.04);
+  border: 1px solid rgba(59, 130, 246, 0.1);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+  cursor: pointer;
+}
+.cloud-link-item:hover {
+  background: rgba(59, 130, 246, 0.08);
+  border-color: rgba(59, 130, 246, 0.2);
+}
+.cloud-link-thumb {
+  width: 40px;
+  height: 28px;
+  border-radius: 4px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: rgba(0,0,0,0.3);
+}
+.cloud-link-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.cloud-link-name {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-grow: 1;
+  min-width: 0;
+}
+.cloud-empty-text {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  text-align: center;
+  padding: 12px 8px;
+}
+
+/* --- Add Cloud Link Modal --- */
+.cloud-modal-content {
+  width: 100%;
+  max-width: 520px;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.cloud-modal-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.cloud-modal-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.cloud-modal-header-left i {
+  color: #60a5fa;
+  width: 22px;
+  height: 22px;
+}
+.cloud-modal-header-left h3 {
+  font-size: 1.05rem;
+  font-weight: 800;
+  background: linear-gradient(to right, #60a5fa, #818cf8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.cloud-modal-body {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.cloud-link-preview-area {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius-md);
+  background: rgba(0, 0, 0, 0.3);
+  border: 2px dashed var(--border-color);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  overflow: hidden;
+  transition: all var(--transition-normal);
+  position: relative;
+}
+.cloud-link-preview-area.has-preview {
+  border-style: solid;
+  border-color: rgba(59, 130, 246, 0.3);
+}
+.cloud-link-preview-area img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  position: absolute;
+  inset: 0;
+}
+.cloud-link-preview-area .preview-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-dim);
+}
+.cloud-link-preview-area .preview-placeholder i {
+  width: 36px;
+  height: 36px;
+  opacity: 0.5;
+}
+.cloud-link-preview-area .preview-placeholder span {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.cloud-modal-footer {
+  padding: 16px 24px 20px;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+.cloud-url-status {
+  font-size: 0.7rem;
+  font-weight: 600;
+  margin-top: -8px;
+  min-height: 18px;
+}
+.cloud-url-status.valid {
+  color: var(--success-color);
+}
+.cloud-url-status.invalid {
+  color: var(--danger-color);
+}
+
+/* --- Iframe Player for Cloud Videos --- */
+.player-wrapper iframe {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  inset: 0;
+  border: none;
+  border-radius: 0;
+}
+
+/* Cloud source indicator in editor header */
+.cloud-source-badge {
+  background: rgba(59, 130, 246, 0.12);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  color: #93bbfc;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.cloud-source-badge i {
+  width: 12px;
+  height: 12px;
+}
+
+/* --- Media Queries for Responsive Design --- */
+@media (max-width: 900px) {
+  .workspace-grid {
+    grid-template-columns: 1fr;
+    height: auto;
+    overflow-y: auto;
+  }
+  .sidebar-panel {
+    height: 300px;
+  }
+  .modal-editor-body {
+    grid-template-columns: 1fr;
+  }
+  .modal-editor-content {
+    height: 96vh;
+    max-height: none;
+    width: 96vw;
+  }
+  .app-header {
+    height: auto;
+    padding: 12px 16px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .header-center {
+    order: 3;
+    width: 100%;
+    margin-top: 5px;
+  }
+}
+
+</style>
+  
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+
+  <!-- Floating Toast Notifications -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Lightbox Thumbnail Preview Modal -->
+  <div id="lightbox-modal" class="lightbox-overlay hidden">
+    <div class="lightbox-content">
+      <img id="lightbox-img" class="lightbox-img" src="" alt="Thumbnail Full Preview">
+    </div>
+    <div id="lightbox-filename" class="lightbox-title">video_name_thumbnail.webp</div>
+    <div class="lightbox-toolbar">
+      <button id="lightbox-download-btn" class="btn btn-success btn-icon">
+        <i data-lucide="download"></i>
+        <span>Download</span>
+      </button>
+      <button id="lightbox-close-btn" class="btn btn-secondary btn-icon">
+        <i data-lucide="x"></i>
+        <span>Close</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Add Cloud Link Modal -->
+  <div id="cloud-link-modal" class="modal-overlay hidden">
+    <div class="cloud-modal-content glassmorphism">
+      <div class="cloud-modal-header">
+        <div class="cloud-modal-header-left">
+          <i data-lucide="cloud"></i>
+          <h3>Add Google Drive Link</h3>
+        </div>
+        <button id="close-cloud-modal-btn" class="icon-btn-secondary" title="Close"><i data-lucide="x"></i></button>
+      </div>
+      <div class="cloud-modal-body">
+        <div class="cloud-link-preview-area" id="cloud-preview-area">
+          <img id="cloud-preview-img" src="" alt="Preview" class="hidden">
+          <div id="cloud-preview-placeholder" class="preview-placeholder">
+            <i data-lucide="link"></i>
+            <span>Paste a Google Drive link below to preview</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label-row"><label for="cloud-url-input">Google Drive URL</label></label>
+          <input type="url" id="cloud-url-input" class="form-control text-input" placeholder="https://drive.google.com/file/d/.../view">
+          <div id="cloud-url-status" class="cloud-url-status"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label-row"><label for="cloud-name-input">Display Name</label></label>
+          <input type="text" id="cloud-name-input" class="form-control text-input" placeholder="e.g. My Tutorial Video" maxlength="120">
+        </div>
+      </div>
+      <div class="cloud-modal-footer">
+        <button id="cloud-cancel-btn" class="btn btn-secondary">Cancel</button>
+        <button id="cloud-save-btn" class="btn btn-primary btn-icon" disabled>
+          <i data-lucide="plus-circle"></i>
+          <span>Add Link</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Cloud Thumbnail Modal -->
+  <div id="cloud-thumbnail-modal" class="modal-overlay hidden" style="z-index: 150;">
+    <div class="cloud-modal-content glassmorphism" style="max-width: 440px;">
+      <div class="cloud-modal-header">
+        <div class="cloud-modal-header-left">
+          <i data-lucide="image"></i>
+          <h3>Add Thumbnail Link</h3>
+        </div>
+        <button id="close-thumb-modal-btn" class="icon-btn-secondary" title="Close"><i data-lucide="x"></i></button>
+      </div>
+      <div class="cloud-modal-body">
+        <div class="form-group">
+          <label class="form-label-row"><label for="thumb-url-input">Image or Google Drive URL</label></label>
+          <input type="url" id="thumb-url-input" class="form-control text-input" placeholder="https://drive.google.com/file/d/... or direct image URL">
+        </div>
+      </div>
+      <div class="cloud-modal-footer">
+        <button id="thumb-cancel-btn" class="btn btn-secondary">Cancel</button>
+        <button id="thumb-save-btn" class="btn btn-primary btn-icon">
+          <i data-lucide="plus-circle"></i>
+          <span>Save Link</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Keyboard Shortcuts Cheat-sheet Dialog -->
+  <div id="shortcuts-modal" class="modal-overlay hidden">
+    <div class="modal-content glassmorphism">
+      <div class="modal-header">
+        <h3>Keyboard Shortcuts</h3>
+        <button id="close-shortcuts-btn" class="icon-btn-secondary" title="Close"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="shortcut-item"><span class="kbd">Ctrl</span> + <span class="kbd">S</span> <span class="shortcut-desc">Save active video metadata</span></div>
+        <div class="shortcut-item"><span class="kbd">Ctrl</span> + <span class="kbd">C</span> <span class="shortcut-desc">Copy active field value (when focused)</span></div>
+        <div class="shortcut-item"><span class="kbd">Ctrl</span> + <span class="kbd">Shift</span> + <span class="kbd">C</span> <span class="shortcut-desc">Copy all fields (Title, Desc, Tags)</span></div>
+        <div class="shortcut-item"><span class="kbd">Alt</span> + <span class="kbd">A</span> <span class="shortcut-desc">Toggle Auto-Save mode</span></div>
+        <div class="shortcut-item"><span class="kbd">ArrowLeft</span> / <span class="kbd">ArrowRight</span> <span class="shortcut-desc">Navigate media grid</span></div>
+        <div class="shortcut-item"><span class="kbd">Esc</span> <span class="shortcut-desc">Close active popup or editor</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- METADATA EDITOR OVERLAY MODAL (POPUP) -->
+  <div id="editor-modal" class="modal-overlay hidden">
+    <div class="modal-editor-content glassmorphism">
+      
+      <!-- Modal Header -->
+      <header class="modal-editor-header">
+        <div class="editor-header-title">
+          <i data-lucide="video" class="text-indigo"></i>
+          <h2 id="active-video-filename" class="video-filename" title="Click to copy filename">video_filename.mp4</h2>
+          <span id="active-video-size" class="video-filesize-badge">0.00 MB</span>
+        </div>
+        <button id="close-editor-btn" class="icon-btn-secondary" title="Close Editor (Esc)">
+          <i data-lucide="x"></i>
+        </button>
+      </header>
+
+      <!-- Modal Body -->
+      <div class="modal-editor-body scrollable">
+        
+        <!-- LEFT COLUMN: Player & Thumbnail -->
+        <div class="editor-col-left">
+          
+          <!-- Video Preview Player Section -->
+          <div class="video-preview-card">
+            <div class="player-wrapper" id="player-wrapper">
+              <video id="main-player" controls preload="metadata"></video>
+              <iframe id="cloud-player" class="hidden" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+            </div>
+            <div class="video-actions-bar">
+              <button id="download-video-btn" class="btn btn-secondary btn-icon btn-sm" title="Download video file">
+                <i data-lucide="download"></i>
+                <span>Download Video</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Thumbnail Section -->
+          <div class="section-card thumbnail-manager-card">
+            <div class="section-title">
+              <i data-lucide="image"></i>
+              <h3>Thumbnail</h3>
+            </div>
+            
+            <div class="thumbnail-flex">
+              <div class="thumbnail-preview-box" id="thumbnail-drop-zone">
+                <img id="thumbnail-preview-img" src="" alt="Video Thumbnail" class="hidden">
+                <div id="thumbnail-placeholder" class="thumbnail-placeholder">
+                  <i data-lucide="image-plus"></i>
+                  <span>No Thumbnail Generated</span>
+                </div>
+                <div class="drop-overlay">
+                  <i data-lucide="upload" class="drop-icon-pulse"></i>
+                  <span>Drop Image here</span>
+                </div>
+              </div>
+              
+              <div class="thumbnail-actions">
+                <p class="section-help-text">Drop an image here, or select a custom local image to permanently associate with this video.</p>
+                <div class="btn-group">
+                  <button id="select-thumbnail-btn" class="btn btn-secondary btn-icon">
+                    <i data-lucide="upload-cloud"></i>
+                    <span>Upload</span>
+                  </button>
+                  <button id="cloud-thumbnail-btn" class="btn btn-secondary btn-icon" title="Add Image URL or Google Drive link">
+                    <i data-lucide="link"></i>
+                    <span>Link</span>
+                  </button>
+                  <button id="regenerate-thumbnail-btn" class="btn btn-icon icon-only-btn" title="Re-generate auto thumbnail from video frame">
+                    <i data-lucide="refresh-cw"></i>
+                  </button>
+                  <button id="remove-thumbnail-btn" class="btn btn-danger btn-icon hidden">
+                    <i data-lucide="trash-2"></i>
+                  </button>
+                  <button id="download-thumbnail-btn" class="btn btn-secondary btn-icon hidden" title="Download thumbnail image">
+                    <i data-lucide="download"></i>
+                  </button>
+                </div>
+                <input type="file" id="thumbnail-file-input" accept="image/jpeg,image/jpg,image/png,image/webp" class="hidden">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT COLUMN: Inputs & Tags -->
+        <div class="editor-col-right">
+          
+          <div class="section-card metadata-form-card">
+            <div class="section-title">
+              <i data-lucide="edit-3"></i>
+              <h3>Metadata Fields</h3>
+            </div>
+
+            <div class="form-fields">
+              
+              <!-- TITLE FIELD -->
+              <div class="form-group">
+                <div class="form-label-row">
+                  <label for="title-input">Video Title</label>
+                  <span id="title-char-count" class="char-counter">0 / 100</span>
+                </div>
+                <div class="input-action-wrapper">
+                  <input type="text" id="title-input" class="form-control text-input" placeholder="Enter a video title..." maxlength="100">
+                  <button id="copy-title-btn" class="btn btn-secondary btn-icon-only copy-field-btn" title="Copy Title (Ctrl+C)">
+                    <i data-lucide="copy"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- DESCRIPTION FIELD -->
+              <div class="form-group">
+                <div class="form-label-row">
+                  <label for="description-input">Description</label>
+                  <span id="desc-char-count" class="char-counter">0 / 5000</span>
+                </div>
+                <div class="input-action-wrapper align-start">
+                  <textarea id="description-input" class="form-control textarea-input" placeholder="Write descriptions, social links, tags..." rows="5" maxlength="5000"></textarea>
+                  <button id="copy-description-btn" class="btn btn-secondary btn-icon-only copy-field-btn" title="Copy Description">
+                    <i data-lucide="copy"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- TAGS FIELD -->
+              <div class="form-group">
+                <div class="form-label-row">
+                  <label for="tags-input-element">YouTube-Style Tags</label>
+                  <span id="tags-count" class="char-counter">0 / 500</span>
+                </div>
+                <div class="input-action-wrapper align-start">
+                  <div class="tags-input-container form-control" id="tags-container">
+                    <div id="tags-list" class="tags-list"></div>
+                    <input type="text" id="tags-input-element" placeholder="Add tag (comma/Enter)..." maxlength="100">
+                  </div>
+                  <button id="copy-tags-btn" class="btn btn-secondary btn-icon-only copy-field-btn" title="Copy Tags">
+                    <i data-lucide="copy"></i>
+                  </button>
+                </div>
+                <p class="field-hint">Press <strong>Enter</strong> or <strong>Comma (,)</strong> to create a tag chip.</p>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer Controls -->
+      <footer class="modal-editor-footer">
+        <div class="auto-save-container">
+          <label class="switch-container">
+            <input type="checkbox" id="auto-save-toggle">
+            <span class="switch-slider"></span>
+          </label>
+          <span class="switch-label">Auto-Save changes</span>
+        </div>
+        
+        <div class="editor-actions">
+          <span id="save-status" class="save-status-indicator"></span>
+          <button id="copy-all-btn" class="btn btn-secondary btn-icon">
+            <i data-lucide="copy-check"></i>
+            <span>Copy All Fields</span>
+          </button>
+          <button id="save-metadata-btn" class="btn btn-success btn-icon">
+            <i data-lucide="save"></i>
+            <span>Save Metadata</span>
+          </button>
+        </div>
+      </footer>
+
+    </div>
+  </div>
+
+  <div class="app-container">
+    
+    <!-- Top Premium Navigation Bar -->
+    <header class="app-header glassmorphism">
+      <div class="header-left">
+        <div class="logo-area">
+          <div class="logo-icon">
+            <i data-lucide="layout-grid" class="logo-svg"></i>
+          </div>
+          <div class="logo-text">
+            <span class="logo-title">VidiFlow</span>
+            <span class="logo-tagline">Metadata Deck</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="header-center">
+        <!-- Dashboard Global Statistics -->
+        <div class="stats-container">
+          <div class="stat-pill" title="Copied Videos / Total Videos">
+            <i data-lucide="check-circle-2" class="text-emerald"></i>
+            <span class="stat-label">Copied</span>
+            <span id="stat-copied-count" class="stat-number">0</span>
+            <span class="stat-divider">/</span>
+            <span id="stat-total-count" class="stat-number-total">0</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="header-right">
+        <div id="internet-status" class="internet-status online">
+          <span class="status-dot"></span>
+          <span id="internet-status-text">Online</span>
+        </div>
+        
+        <button id="add-cloud-link-btn" class="btn btn-secondary btn-icon" title="Add Google Drive Link">
+          <i data-lucide="cloud"></i>
+          <span>Cloud Link</span>
+        </button>
+        
+        <button id="select-folder-btn" class="btn btn-primary btn-icon">
+          <i data-lucide="folder-plus"></i>
+          <span>Track Folder</span>
+        </button>
+        
+        <button id="shortcuts-info-btn" class="icon-btn-secondary" title="Keyboard Shortcuts">
+          <i data-lucide="keyboard"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Workspace Split layout: Folders Sidebar & Gallery Grid -->
+    <main class="workspace-grid">
+      
+      <!-- COLLAPSIBLE FOLDER MANAGEMENT SIDEBAR -->
+      <aside class="sidebar-panel panel glassmorphism">
+        <div class="sidebar-header">
+          <i data-lucide="folder-git-2" class="sidebar-header-icon"></i>
+          <h3>Tracked Folders</h3>
+        </div>
+        
+        <div class="sidebar-content scrollable">
+          <!-- Pending permission notification box -->
+          <div id="reauth-warning-box" class="reauth-warning hidden">
+            <p>Access requires re-authorization since app re-opened.</p>
+            <button id="reauth-btn" class="btn btn-success btn-icon btn-sm">
+              <i data-lucide="key"></i>
+              <span>Restore Access</span>
+            </button>
+          </div>
+
+          <div id="folders-list" class="folders-list">
+            <!-- Dynamically populated folders go here -->
+            <div class="folders-empty-text">No folders tracked yet.</div>
+          </div>
+        </div>
+        
+        <!-- Cloud Links Section -->
+        <div class="sidebar-divider"></div>
+        <div class="cloud-section-header">
+          <div class="cloud-section-header-left">
+            <i data-lucide="cloud"></i>
+            <h4>Cloud Links</h4>
+          </div>
+          <button id="sidebar-add-cloud-btn" class="icon-btn-secondary" style="width:26px;height:26px;" title="Add Cloud Link">
+            <i data-lucide="plus" style="width:14px;height:14px;"></i>
+          </button>
+        </div>
+        <div id="cloud-links-list" class="cloud-links-list">
+          <div class="cloud-empty-text">No cloud links added yet.</div>
+        </div>
+        
+        <div class="sidebar-footer">
+          <button id="sidebar-add-folder-btn" class="btn btn-secondary btn-icon w-full">
+            <i data-lucide="plus"></i>
+            <span>Add Folder</span>
+          </button>
+        </div>
+      </aside>
+
+      <!-- MEDIA EXPLORER (Full-Width Responsive Gallery Grid) -->
+      <section class="explorer-panel panel glassmorphism">
+        
+        <!-- Search, Filter & Sorting Bar -->
+        <div class="panel-header">
+          <div class="search-wrapper">
+            <i data-lucide="search" class="search-icon"></i>
+            <input type="text" id="search-input" placeholder="Search filename, title, description, or tags..." autocomplete="off">
+            <button id="clear-search-btn" class="clear-btn hidden" title="Clear Search"><i data-lucide="x"></i></button>
+          </div>
+          
+          <div class="filters-container">
+            <div class="filter-chips">
+              <button class="chip active" data-filter="all">All Videos</button>
+              <button class="chip" data-filter="copied">
+                <i data-lucide="check" class="chip-icon text-emerald"></i> Copied
+              </button>
+              <button class="chip" data-filter="not-copied">Remaining</button>
+              <button class="chip" data-filter="has-thumbnail">With Custom Thumbnail</button>
+              <button class="chip" data-filter="missing-metadata">Missing Info</button>
+            </div>
+            
+            <div class="sort-wrapper">
+              <select id="sort-select" class="select-input">
+                <option value="name-asc">Name (A-Z)</option>
+                <option value="name-desc">Name (Z-A)</option>
+                <option value="size-desc">Size (Largest)</option>
+                <option value="date-desc">Date (Newest)</option>
+                <option value="date-asc">Date (Oldest)</option>
+                <option value="folder-asc">Folder (Oldest Tracked)</option>
+                <option value="folder-desc">Folder (Newest Tracked)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Scrollable Cards Grid Container -->
+        <div class="panel-content scrollable">
+          <div id="video-cards-grid" class="cards-grid">
+            <!-- Dynamically populated video cards -->
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Fallback folder input triggers -->
+  <input type="file" id="directory-input-fallback" webkitdirectory directory multiple class="hidden">
+
+  <!-- Main Application Logic Script -->
+  <script>
+/* ==========================================================================
+   VidiFlow Application Logic - Multi-Folder Manager & Popup Editor
+   ========================================================================== */
+
+(function () {
+  'use strict';
+
+  // --- Configuration & State Variables ---
+  const DB_NAME = 'VidiFlowDB_v2';
+  const DB_VERSION = 2;
+  const STORE_METADATA = 'metadata';
+  const STORE_FOLDERS = 'folders';
+  const STORE_CLOUD_LINKS = 'cloudLinks';
+
+  let db = null;
+  let trackedFolders = new Map(); // Key: folderId, Value: FolderWrapper {id, name, handle, count}
+  let filesMap = new Map();       // Key: fileId (folderName_filename_size), Value: FileWrapper
+  let cloudLinksMap = new Map();  // Key: cloudId, Value: CloudLinkRecord
+  let filteredFileIds = [];      // Sorted & filtered file IDs list
+  
+  let activeFileId = null;
+  let activeCloudId = null;      // Currently open cloud link in editor
+  let activeTags = [];
+  let thumbnailQueue = [];
+  let isGeneratingThumbnail = false;
+  let autoSaveTimeout = null;
+  let isOnline = navigator.onLine;
+
+  // App Settings / Filter state
+  let currentFilter = 'all';
+  let currentSort = 'name-asc';
+  let searchQuery = '';
+  let autoSaveEnabled = false;
+
+  // --- DOM Elements ---
+  const selectFolderBtn = document.getElementById('select-folder-btn');
+  const sidebarAddFolderBtn = document.getElementById('sidebar-add-folder-btn');
+  const foldersListContainer = document.getElementById('folders-list');
+  const reauthWarningBox = document.getElementById('reauth-warning-box');
+  const reauthBtn = document.getElementById('reauth-btn');
+  
+  const statCopiedCount = document.getElementById('stat-copied-count');
+  const statTotalCount = document.getElementById('stat-total-count');
+  
+  const searchInput = document.getElementById('search-input');
+  const clearSearchBtn = document.getElementById('clear-search-btn');
+  const sortSelect = document.getElementById('sort-select');
+  const filterChips = document.querySelectorAll('.filter-chips .chip');
+  
+  const videoCardsGrid = document.getElementById('video-cards-grid');
+  
+  // Modal Editor UI Elements
+  const editorModal = document.getElementById('editor-modal');
+  const closeEditorBtn = document.getElementById('close-editor-btn');
+  
+  const mainPlayer = document.getElementById('main-player');
+  const activeVideoFilename = document.getElementById('active-video-filename');
+  const activeVideoSize = document.getElementById('active-video-size');
+  const downloadVideoBtn = document.getElementById('download-video-btn');
+  
+  const thumbnailDropZone = document.getElementById('thumbnail-drop-zone');
+  const thumbnailPreviewImg = document.getElementById('thumbnail-preview-img');
+  const thumbnailPlaceholder = document.getElementById('thumbnail-placeholder');
+  const selectThumbnailBtn = document.getElementById('select-thumbnail-btn');
+  const thumbnailFileInput = document.getElementById('thumbnail-file-input');
+  const regenerateThumbnailBtn = document.getElementById('regenerate-thumbnail-btn');
+  const removeThumbnailBtn = document.getElementById('remove-thumbnail-btn');
+  const downloadThumbnailBtn = document.getElementById('download-thumbnail-btn');
+  
+  // Lightbox DOM Elements
+  const lightboxModal = document.getElementById('lightbox-modal');
+  const lightboxImg = document.getElementById('lightbox-img');
+  const lightboxFilename = document.getElementById('lightbox-filename');
+  const lightboxDownloadBtn = document.getElementById('lightbox-download-btn');
+  const lightboxCloseBtn = document.getElementById('lightbox-close-btn');
+  
+  const titleInput = document.getElementById('title-input');
+  const titleCharCount = document.getElementById('title-char-count');
+  const copyTitleBtn = document.getElementById('copy-title-btn');
+  
+  const descriptionInput = document.getElementById('description-input');
+  const descCharCount = document.getElementById('desc-char-count');
+  const copyDescriptionBtn = document.getElementById('copy-description-btn');
+  
+  const tagsContainer = document.getElementById('tags-container');
+  const tagsList = document.getElementById('tags-list');
+  const tagsInputElement = document.getElementById('tags-input-element');
+  const tagsCount = document.getElementById('tags-count');
+  const copyTagsBtn = document.getElementById('copy-tags-btn');
+  
+  const autoSaveToggle = document.getElementById('auto-save-toggle');
+  const saveStatus = document.getElementById('save-status');
+  const copyAllBtn = document.getElementById('copy-all-btn');
+  const saveMetadataBtn = document.getElementById('save-metadata-btn');
+  
+  const shortcutsInfoBtn = document.getElementById('shortcuts-info-btn');
+  const shortcutsModal = document.getElementById('shortcuts-modal');
+  const closeShortcutsBtn = document.getElementById('close-shortcuts-btn');
+  const toastContainer = document.getElementById('toast-container');
+
+  // Cloud Link DOM Elements
+  const addCloudLinkBtn = document.getElementById('add-cloud-link-btn');
+  const sidebarAddCloudBtn = document.getElementById('sidebar-add-cloud-btn');
+  const cloudLinksListContainer = document.getElementById('cloud-links-list');
+  const cloudLinkModal = document.getElementById('cloud-link-modal');
+  const closeCloudModalBtn = document.getElementById('close-cloud-modal-btn');
+  const cloudUrlInput = document.getElementById('cloud-url-input');
+  const cloudNameInput = document.getElementById('cloud-name-input');
+  const cloudUrlStatus = document.getElementById('cloud-url-status');
+  const cloudPreviewArea = document.getElementById('cloud-preview-area');
+  const cloudPreviewImg = document.getElementById('cloud-preview-img');
+  const cloudPreviewPlaceholder = document.getElementById('cloud-preview-placeholder');
+  const cloudSaveBtn = document.getElementById('cloud-save-btn');
+  const cloudCancelBtn = document.getElementById('cloud-cancel-btn');
+  const cloudPlayer = document.getElementById('cloud-player');
+  const internetStatusEl = document.getElementById('internet-status');
+  const internetStatusText = document.getElementById('internet-status-text');
+
+  // Cloud Thumbnail DOM Elements
+  const cloudThumbnailBtn = document.getElementById('cloud-thumbnail-btn');
+  const cloudThumbnailModal = document.getElementById('cloud-thumbnail-modal');
+  const closeThumbModalBtn = document.getElementById('close-thumb-modal-btn');
+  const thumbUrlInput = document.getElementById('thumb-url-input');
+  const thumbSaveBtn = document.getElementById('thumb-save-btn');
+  const thumbCancelBtn = document.getElementById('thumb-cancel-btn');
+
+  // --- Initialize App ---
+  document.addEventListener('DOMContentLoaded', async () => {
+    // Open Database
+    await initDB();
+    
+    // Load Auto-Save setting
+    const savedAutoSave = localStorage.getItem('vidiflow_autosave');
+    if (savedAutoSave !== null) {
+      autoSaveEnabled = savedAutoSave === 'true';
+      autoSaveToggle.checked = autoSaveEnabled;
+    }
+    
+    // Load Sort & Filter settings
+    const savedFilter = localStorage.getItem('vidiflow_filter');
+    if (savedFilter !== null) {
+      currentFilter = savedFilter;
+      filterChips.forEach(chip => {
+        if (chip.getAttribute('data-filter') === currentFilter) {
+          chip.classList.add('active');
+        } else {
+          chip.classList.remove('active');
+        }
+      });
+    }
+    
+    const savedSort = localStorage.getItem('vidiflow_sort');
+    if (savedSort !== null) {
+      currentSort = savedSort;
+      sortSelect.value = currentSort;
+    }
+    
+    // Wire events
+    setupEventHandlers();
+    
+    // Internet connectivity detection
+    setupInternetDetection();
+    
+    // Restore Folders
+    await loadTrackedFoldersFromDB();
+    
+    // Restore Cloud Links
+    await loadCloudLinksFromDB();
+    
+    lucide.createIcons();
+  });
+
+  // --- IndexedDB Operations ---
+  function initDB() {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open(DB_NAME, DB_VERSION);
+      
+      request.onerror = (event) => {
+        showToast('IndexedDB database error.', 'error');
+        reject(event.target.error);
+      };
+      
+      request.onsuccess = (event) => {
+        db = event.target.result;
+        resolve(db);
+      };
+      
+      request.onupgradeneeded = (event) => {
+        const database = event.target.result;
+        // Metadata Store
+        if (!database.objectStoreNames.contains(STORE_METADATA)) {
+          database.createObjectStore(STORE_METADATA, { keyPath: 'id' });
+        }
+        // Tracked Folders Store
+        if (!database.objectStoreNames.contains(STORE_FOLDERS)) {
+          database.createObjectStore(STORE_FOLDERS, { keyPath: 'id' });
+        }
+        // Cloud Links Store
+        if (!database.objectStoreNames.contains(STORE_CLOUD_LINKS)) {
+          database.createObjectStore(STORE_CLOUD_LINKS, { keyPath: 'id' });
+        }
+      };
+    });
+  }
+
+  // Folders Store Methods
+  function saveFolderToDB(folderRecord) {
+    return new Promise((resolve) => {
+      if (!db) return resolve(false);
+      const transaction = db.transaction([STORE_FOLDERS], 'readwrite');
+      const store = transaction.objectStore(STORE_FOLDERS);
+      const request = store.put(folderRecord);
+      request.onsuccess = () => resolve(true);
+      request.onerror = () => resolve(false);
+    });
+  }
+
+  function removeFolderFromDB(folderId) {
+    return new Promise((resolve) => {
+      if (!db) return resolve(false);
+      const transaction = db.transaction([STORE_FOLDERS], 'readwrite');
+      const store = transaction.objectStore(STORE_FOLDERS);
+      const request = store.delete(folderId);
+      request.onsuccess = () => resolve(true);
+      request.onerror = () => resolve(false);
+    });
+  }
+
+  function getAllFoldersFromDB() {
+    return new Promise((resolve) => {
+      if (!db) return resolve([]);
+      const transaction = db.transaction([STORE_FOLDERS], 'readonly');
+      const store = transaction.objectStore(STORE_FOLDERS);
+      const request = store.getAll();
+      request.onsuccess = () => resolve(request.result || []);
+      request.onerror = () => resolve([]);
+    });
+  }
+
+  // Metadata Store Methods
+  function getMetadata(fileId) {
+    return new Promise((resolve) => {
+      if (!db) return resolve(null);
+      const transaction = db.transaction([STORE_METADATA], 'readonly');
+      const store = transaction.objectStore(STORE_METADATA);
+      const request = store.get(fileId);
+      request.onsuccess = () => resolve(request.result || null);
+      request.onerror = () => resolve(null);
+    });
+  }
+
+  function saveMetadataRecord(record) {
+    return new Promise(async (resolve, reject) => {
+      if (!db) return reject(new Error('DB not initialized'));
+      
+      // Handle cloud link metadata
+      if (record.id && record.id.startsWith('cloud_')) {
+        const driveFileId = record.id.substring(6);
+        const cloudId = `gdrive_${driveFileId}`;
+        const cloudRecord = cloudLinksMap.get(cloudId);
+        if (cloudRecord) {
+          cloudRecord.metadata = record;
+          const success = await saveCloudLinkToDB(cloudRecord);
+          if (success) {
+            resolve(true);
+          } else {
+            reject(new Error('Failed to save cloud metadata'));
+          }
+        } else {
+          reject(new Error('Cloud record not found'));
+        }
+        return;
+      }
+      
+      const transaction = db.transaction([STORE_METADATA], 'readwrite');
+      const store = transaction.objectStore(STORE_METADATA);
+      const request = store.put(record);
+      request.onsuccess = () => resolve(true);
+      request.onerror = (e) => reject(e.target.error);
+    });
+  }
+
+  // Cloud Links Store Methods
+  function saveCloudLinkToDB(record) {
+    return new Promise((resolve) => {
+      if (!db) return resolve(false);
+      const transaction = db.transaction([STORE_CLOUD_LINKS], 'readwrite');
+      const store = transaction.objectStore(STORE_CLOUD_LINKS);
+      const request = store.put(record);
+      request.onsuccess = () => resolve(true);
+      request.onerror = () => resolve(false);
+    });
+  }
+
+  function removeCloudLinkFromDB(linkId) {
+    return new Promise((resolve) => {
+      if (!db) return resolve(false);
+      const transaction = db.transaction([STORE_CLOUD_LINKS], 'readwrite');
+      const store = transaction.objectStore(STORE_CLOUD_LINKS);
+      const request = store.delete(linkId);
+      request.onsuccess = () => resolve(true);
+      request.onerror = () => resolve(false);
+    });
+  }
+
+  function getAllCloudLinksFromDB() {
+    return new Promise((resolve) => {
+      if (!db) return resolve([]);
+      const transaction = db.transaction([STORE_CLOUD_LINKS], 'readonly');
+      const store = transaction.objectStore(STORE_CLOUD_LINKS);
+      const request = store.getAll();
+      request.onsuccess = () => resolve(request.result || []);
+      request.onerror = () => resolve([]);
+    });
+  }
+
+  // --- Internet Connectivity Detection ---
+  function setupInternetDetection() {
+    updateInternetStatus();
+    window.addEventListener('online', () => {
+      isOnline = true;
+      updateInternetStatus();
+      showToast('Internet connection restored.', 'success');
+    });
+    window.addEventListener('offline', () => {
+      isOnline = false;
+      updateInternetStatus();
+      showToast('You are offline. Cloud links may not load.', 'error');
+    });
+  }
+
+  function updateInternetStatus() {
+    if (isOnline) {
+      internetStatusEl.className = 'internet-status online';
+      internetStatusText.textContent = 'Online';
+    } else {
+      internetStatusEl.className = 'internet-status offline';
+      internetStatusText.textContent = 'Offline';
+    }
+  }
+
+  // --- Google Drive URL Parser ---
+  function parseGoogleDriveUrl(url) {
+    if (!url || typeof url !== 'string') return null;
+    url = url.trim();
+    
+    let fileId = null;
+    
+    // Format: https://drive.google.com/file/d/{ID}/...
+    const match1 = url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+    if (match1) fileId = match1[1];
+    
+    // Format: https://drive.google.com/open?id={ID}
+    if (!fileId) {
+      const match2 = url.match(/drive\.google\.com\/open\?id=([a-zA-Z0-9_-]+)/);
+      if (match2) fileId = match2[1];
+    }
+    
+    // Format: https://drive.google.com/uc?id={ID}
+    if (!fileId) {
+      const match3 = url.match(/drive\.google\.com\/uc\?.*id=([a-zA-Z0-9_-]+)/);
+      if (match3) fileId = match3[1];
+    }
+
+    // Format: https://drive.google.com/uc?export=download&id={ID}
+    if (!fileId) {
+      const match4 = url.match(/drive\.google\.com\/uc\?export=download&id=([a-zA-Z0-9_-]+)/);
+      if (match4) fileId = match4[1];
+    }
+    
+    if (!fileId) return null;
+    
+    return {
+      fileId: fileId,
+      thumbnailUrl: `https://drive.google.com/thumbnail?id=${fileId}&sz=w320`,
+      previewUrl: `https://drive.google.com/file/d/${fileId}/preview`,
+      downloadUrl: `https://drive.google.com/uc?export=download&id=${fileId}`,
+      viewUrl: `https://drive.google.com/file/d/${fileId}/view`
+    };
+  }
+
+  // --- Cloud Link Management ---
+  async function loadCloudLinksFromDB() {
+    const links = await getAllCloudLinksFromDB();
+    cloudLinksMap.clear();
+    for (const link of links) {
+      cloudLinksMap.set(link.id, link);
+      // Also add to filesMap as a cloud wrapper for grid integration
+      addCloudLinkToFilesMap(link);
+    }
+    renderCloudLinksSidebar();
+    finishFilesLoading();
+  }
+
+  function addCloudLinkToFilesMap(linkRecord) {
+    const fileId = `cloud_${linkRecord.driveFileId}`;
+    filesMap.set(fileId, {
+      id: fileId,
+      name: linkRecord.name || 'Cloud Video',
+      size: 0,
+      lastModified: linkRecord.addedAt || Date.now(),
+      file: null,
+      type: 'cloud',
+      folderId: '__cloud__',
+      cloudId: linkRecord.id,
+      driveFileId: linkRecord.driveFileId,
+      thumbnailUrl: linkRecord.thumbnailUrl,
+      previewUrl: linkRecord.previewUrl,
+      downloadUrl: linkRecord.downloadUrl,
+      originalUrl: linkRecord.originalUrl,
+      metadata: linkRecord.metadata || createDefaultCloudMetadata(fileId, linkRecord.name)
+    });
+  }
+
+  function createDefaultCloudMetadata(fileId, name) {
+    return {
+      id: fileId,
+      filename: name,
+      size: 0,
+      folderId: '__cloud__',
+      title: '',
+      description: '',
+      tags: [],
+      thumbnail: null,
+      hasCustomThumbnail: false,
+      copiedStates: { title: false, description: false, tags: false },
+      isCopied: false,
+      isHidden: false
+    };
+  }
+
+  function openCloudThumbnailModal() {
+    thumbUrlInput.value = '';
+    cloudThumbnailModal.classList.remove('hidden');
+    setTimeout(() => thumbUrlInput.focus(), 100);
+  }
+
+  function closeCloudThumbnailModal() {
+    cloudThumbnailModal.classList.add('hidden');
+  }
+
+  function getResolvedImageUrl(url) {
+    if (!url) return '';
+    const parsed = parseGoogleDriveUrl(url);
+    if (parsed) {
+      return `https://drive.google.com/thumbnail?id=${parsed.fileId}&sz=w600`;
+    }
+    return url;
+  }
+
+  async function saveCloudThumbnailLink() {
+    const url = thumbUrlInput.value.trim();
+    if (!url) {
+      showToast('Please enter a URL.', 'error');
+      return;
+    }
+    
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      showToast('Invalid URL. Must start with http:// or https://', 'error');
+      return;
+    }
+    
+    const resolvedUrl = getResolvedImageUrl(url);
+    
+    if (activeFileId) {
+      const wrapper = filesMap.get(activeFileId);
+      if (wrapper) {
+        wrapper.metadata.thumbnail = resolvedUrl;
+        wrapper.metadata.hasCustomThumbnail = true;
+        
+        renderThumbnailPreview(resolvedUrl);
+        updateCardThumbnailUI(activeFileId, resolvedUrl);
+        
+        showToast('Cloud thumbnail associated.', 'success');
+        triggerAutoSave();
+      }
+    }
+    
+    closeCloudThumbnailModal();
+  }
+
+  function openCloudLinkModal() {
+    cloudUrlInput.value = '';
+    cloudNameInput.value = '';
+    cloudUrlStatus.textContent = '';
+    cloudUrlStatus.className = 'cloud-url-status';
+    cloudPreviewImg.src = '';
+    cloudPreviewImg.classList.add('hidden');
+    cloudPreviewPlaceholder.classList.remove('hidden');
+    cloudPreviewArea.classList.remove('has-preview');
+    cloudSaveBtn.disabled = true;
+    cloudLinkModal.classList.remove('hidden');
+    setTimeout(() => cloudUrlInput.focus(), 100);
+  }
+
+  function closeCloudLinkModal() {
+    cloudLinkModal.classList.add('hidden');
+  }
+
+  let cloudUrlDebounce = null;
+  function handleCloudUrlInput() {
+    const url = cloudUrlInput.value.trim();
+    if (cloudUrlDebounce) clearTimeout(cloudUrlDebounce);
+    
+    if (!url) {
+      cloudUrlStatus.textContent = '';
+      cloudUrlStatus.className = 'cloud-url-status';
+      cloudPreviewImg.src = '';
+      cloudPreviewImg.classList.add('hidden');
+      cloudPreviewPlaceholder.classList.remove('hidden');
+      cloudPreviewArea.classList.remove('has-preview');
+      cloudSaveBtn.disabled = true;
+      return;
+    }
+    
+    cloudUrlDebounce = setTimeout(() => {
+      const parsed = parseGoogleDriveUrl(url);
+      if (parsed) {
+        cloudUrlStatus.textContent = '✓ Valid Google Drive link detected';
+        cloudUrlStatus.className = 'cloud-url-status valid';
+        cloudSaveBtn.disabled = false;
+        
+        // Try loading thumbnail preview
+        cloudPreviewImg.onload = () => {
+          cloudPreviewImg.classList.remove('hidden');
+          cloudPreviewPlaceholder.classList.add('hidden');
+          cloudPreviewArea.classList.add('has-preview');
+        };
+        cloudPreviewImg.onerror = () => {
+          cloudPreviewImg.classList.add('hidden');
+          cloudPreviewPlaceholder.classList.remove('hidden');
+          cloudPreviewArea.classList.remove('has-preview');
+        };
+        cloudPreviewImg.src = parsed.thumbnailUrl;
+        
+        // Auto-fill name if empty
+        if (!cloudNameInput.value.trim()) {
+          cloudNameInput.value = `Drive Video ${cloudLinksMap.size + 1}`;
+        }
+      } else {
+        cloudUrlStatus.textContent = '✗ Not a valid Google Drive link';
+        cloudUrlStatus.className = 'cloud-url-status invalid';
+        cloudSaveBtn.disabled = true;
+        cloudPreviewImg.src = '';
+        cloudPreviewImg.classList.add('hidden');
+        cloudPreviewPlaceholder.classList.remove('hidden');
+        cloudPreviewArea.classList.remove('has-preview');
+      }
+    }, 400);
+  }
+
+  async function saveCloudLink() {
+    const url = cloudUrlInput.value.trim();
+    const name = cloudNameInput.value.trim() || 'Cloud Video';
+    const parsed = parseGoogleDriveUrl(url);
+    
+    if (!parsed) {
+      showToast('Invalid Google Drive link.', 'error');
+      return;
+    }
+    
+    // Check for duplicate
+    const linkId = `gdrive_${parsed.fileId}`;
+    if (cloudLinksMap.has(linkId)) {
+      showToast('This link is already added.', 'info');
+      return;
+    }
+    
+    const record = {
+      id: linkId,
+      name: name,
+      driveFileId: parsed.fileId,
+      originalUrl: url,
+      thumbnailUrl: parsed.thumbnailUrl,
+      previewUrl: parsed.previewUrl,
+      downloadUrl: parsed.downloadUrl,
+      addedAt: Date.now(),
+      metadata: createDefaultCloudMetadata(`cloud_${parsed.fileId}`, name)
+    };
+    
+    await saveCloudLinkToDB(record);
+    cloudLinksMap.set(linkId, record);
+    addCloudLinkToFilesMap(record);
+    
+    renderCloudLinksSidebar();
+    finishFilesLoading();
+    closeCloudLinkModal();
+    
+    showToast(`Added cloud link: "${name}"`, 'success');
+  }
+
+  async function removeCloudLink(linkId) {
+    const link = cloudLinksMap.get(linkId);
+    if (!link) return;
+    
+    if (confirm(`Remove cloud link "${link.name}"?\nThis will only remove it from VidiFlow, not from Google Drive.`)) {
+      await removeCloudLinkFromDB(linkId);
+      cloudLinksMap.delete(linkId);
+      
+      // Remove from filesMap
+      const fileId = `cloud_${link.driveFileId}`;
+      filesMap.delete(fileId);
+      
+      // Close editor if this was open
+      if (activeCloudId === linkId) {
+        closeVideoEditor();
+      }
+      
+      renderCloudLinksSidebar();
+      finishFilesLoading();
+      showToast(`Removed cloud link: "${link.name}"`, 'info');
+    }
+  }
+
+  function renderCloudLinksSidebar() {
+    cloudLinksListContainer.innerHTML = '';
+    
+    if (cloudLinksMap.size === 0) {
+      cloudLinksListContainer.innerHTML = '<div class="cloud-empty-text">No cloud links added yet.</div>';
+      return;
+    }
+    
+    cloudLinksMap.forEach((link) => {
+      const item = document.createElement('div');
+      item.className = 'cloud-link-item';
+      
+      item.innerHTML = `
+        <div class="cloud-link-thumb">
+          <img src="${link.thumbnailUrl}" alt="Thumb" onerror="this.style.display='none'">
+        </div>
+        <span class="cloud-link-name" title="${link.name}">${link.name}</span>
+        <button class="remove-folder-btn" data-cloud-id="${link.id}" title="Remove cloud link">
+          <i data-lucide="trash-2"></i>
+        </button>
+      `;
+      
+      item.querySelector('.cloud-link-name').addEventListener('click', (e) => {
+        e.stopPropagation();
+        const fileId = `cloud_${link.driveFileId}`;
+        openVideoEditor(fileId);
+      });
+      
+      item.querySelector('.remove-folder-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        removeCloudLink(link.id);
+      });
+      
+      cloudLinksListContainer.appendChild(item);
+    });
+    
+    lucide.createIcons();
+  }
+
+  // --- Toast Manager ---
+  function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    
+    let iconName = 'info';
+    if (type === 'success') iconName = 'check-circle';
+    if (type === 'error') iconName = 'alert-triangle';
+    
+    toast.innerHTML = `
+      <i data-lucide="${iconName}" class="toast-icon"></i>
+      <span class="toast-message">${message}</span>
+    `;
+    
+    toastContainer.appendChild(toast);
+    lucide.createIcons({ attrs: { class: 'toast-icon' } });
+    
+    setTimeout(() => {
+      toast.remove();
+    }, 3000);
+  }
+
+  // --- Helper Utilities ---
+  const SUPPORTED_VIDEOS = ['mp4', 'mov', 'webm', 'mkv'];
+  const SUPPORTED_IMAGES = ['jpg', 'jpeg', 'png', 'webp'];
+
+  function getExtension(filename) {
+    return filename.split('.').pop().toLowerCase();
+  }
+
+  function isVideoFile(filename) {
+    return SUPPORTED_VIDEOS.includes(getExtension(filename));
+  }
+
+  function isImageFile(filename) {
+    return SUPPORTED_IMAGES.includes(getExtension(filename));
+  }
+
+  function formatBytes(bytes, decimals = 2) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+  }
+
+  function generateFileId(folderName, filename, size) {
+    return `${folderName}_${filename}_${size}`.replace(/[^a-zA-Z0-9_.-]/g, '_');
+  }
+
+  // --- Multi-Folder Handlers ---
+  async function loadTrackedFoldersFromDB() {
+    const folders = await getAllFoldersFromDB();
+    if (folders.length === 0) {
+      renderFoldersSidebar();
+      return;
+    }
+    
+    let needsAuth = false;
+    for (const folder of folders) {
+      trackedFolders.set(folder.id, {
+        id: folder.id,
+        name: folder.name,
+        handle: folder.handle,
+        addedAt: folder.addedAt || 0,
+        count: 0,
+        authorized: false
+      });
+      
+      // Query permission
+      try {
+        const isGranted = (await folder.handle.queryPermission({ mode: 'readwrite' })) === 'granted';
+        if (isGranted) {
+          trackedFolders.get(folder.id).authorized = true;
+          await scanDirectoryHandle(folder.handle, folder.id, false);
+        } else {
+          needsAuth = true;
+        }
+      } catch (err) {
+        needsAuth = true;
+      }
+    }
+    
+    reauthWarningBox.classList.toggle('hidden', !needsAuth);
+    renderFoldersSidebar();
+    finishFilesLoading();
+  }
+
+  async function restoreAccess() {
+    let authorizedCount = 0;
+    for (const folder of trackedFolders.values()) {
+      if (!folder.authorized) {
+        try {
+          const granted = (await folder.handle.requestPermission({ mode: 'readwrite' })) === 'granted';
+          if (granted) {
+            folder.authorized = true;
+            authorizedCount++;
+            await scanDirectoryHandle(folder.handle, folder.id, false);
+          }
+        } catch (err) {
+          console.error(`Permission denied for folder: ${folder.name}`, err);
+        }
+      }
+    }
+    
+    // Check if any folders are still unauthorized
+    let stillNeedsAuth = false;
+    for (const folder of trackedFolders.values()) {
+      if (!folder.authorized) stillNeedsAuth = true;
+    }
+    
+    reauthWarningBox.classList.toggle('hidden', !stillNeedsAuth);
+    renderFoldersSidebar();
+    finishFilesLoading();
+    
+    if (authorizedCount > 0) {
+      showToast(`Restored access to ${authorizedCount} folder(s).`, 'success');
+      queueThumbnails();
+    }
+  }
+
+  async function addFolder() {
+    if (!('showDirectoryPicker' in window)) {
+      showToast('File System Access API not supported. Using folder picker fallback.', 'info');
+      triggerFallbackPicker();
+      return;
+    }
+    
+    try {
+      const handle = await window.showDirectoryPicker({ mode: 'readwrite' });
+      const folderId = handle.name.replace(/[^a-zA-Z0-9_.-]/g, '_');
+      
+      if (trackedFolders.has(folderId)) {
+        showToast('This folder is already tracked.', 'info');
+        return;
+      }
+      
+      // Save Folder Handle to IndexedDB
+      const addedAt = Date.now();
+      const folderRecord = { id: folderId, name: handle.name, handle: handle, addedAt: addedAt };
+      await saveFolderToDB(folderRecord);
+      
+      // Update state
+      trackedFolders.set(folderId, {
+        id: folderId,
+        name: handle.name,
+        handle: handle,
+        addedAt: addedAt,
+        count: 0,
+        authorized: true
+      });
+      
+      // Scan immediately
+      await scanDirectoryHandle(handle, folderId, true);
+      
+      renderFoldersSidebar();
+      finishFilesLoading();
+      
+      showToast(`Tracked folder: "${handle.name}"`, 'success');
+      queueThumbnails();
+    } catch (err) {
+      if (err.name !== 'AbortError') {
+        console.error(err);
+        showToast('Failed to select folder.', 'error');
+      }
+    }
+  }
+
+  function triggerFallbackPicker() {
+    document.getElementById('directory-input-fallback').click();
+  }
+
+  // Fallback files change event
+  document.getElementById('directory-input-fallback').addEventListener('change', async (e) => {
+    const fileList = e.target.files;
+    if (!fileList || fileList.length === 0) return;
+    
+    showToast('Importing fallback files...', 'info');
+    let importedCount = 0;
+    let folderName = 'Imported Folder';
+    
+    // Derive name from first file
+    if (fileList[0].webkitRelativePath) {
+      const parts = fileList[0].webkitRelativePath.split('/');
+      if (parts.length > 1) folderName = parts[0];
+    }
+    const folderId = folderName.replace(/[^a-zA-Z0-9_.-]/g, '_');
+    
+    const addedAt = Date.now();
+    for (let i = 0; i < fileList.length; i++) {
+      const file = fileList[i];
+      if (isVideoFile(file.name)) {
+        const fileId = generateFileId(folderName, file.name, file.size);
+        
+        if (!filesMap.has(fileId)) {
+          const defaultMeta = createDefaultMetadata(fileId, file.name, file.size, folderId);
+          const saved = await getMetadata(fileId);
+          
+          filesMap.set(fileId, {
+            id: fileId,
+            name: file.name,
+            size: file.size,
+            lastModified: file.lastModified,
+            file: file,
+            type: 'video',
+            folderId: folderId,
+            metadata: saved ? { ...defaultMeta, ...saved } : defaultMeta
+          });
+          importedCount++;
+        }
+      }
+    }
+    
+    // Add folder placeholder in tracked
+    trackedFolders.set(folderId, {
+      id: folderId,
+      name: folderName,
+      handle: null, // No handle since it is a fallback import
+      addedAt: addedAt,
+      count: importedCount,
+      authorized: true
+    });
+    
+    renderFoldersSidebar();
+    finishFilesLoading();
+    showToast(`Imported ${importedCount} videos from folder.`, 'success');
+    queueThumbnails();
+  });
+
+  async function scanDirectoryHandle(dirHandle, folderId, applyUINow = true) {
+    let count = 0;
+    const folderName = dirHandle.name;
+    
+    async function traverse(handle) {
+      for await (const entry of handle.values()) {
+        if (entry.kind === 'file' && isVideoFile(entry.name)) {
+          try {
+            const file = await entry.getFile();
+            const fileId = generateFileId(folderName, file.name, file.size);
+            
+            // Check if already in memory
+            if (!filesMap.has(fileId)) {
+              const defaultMeta = createDefaultMetadata(fileId, file.name, file.size, folderId);
+              const saved = await getMetadata(fileId);
+              
+              filesMap.set(fileId, {
+                id: fileId,
+                name: file.name,
+                size: file.size,
+                lastModified: file.lastModified,
+                file: file,
+                type: 'video',
+                folderId: folderId,
+                metadata: saved ? { ...defaultMeta, ...saved } : defaultMeta
+              });
+            }
+            count++;
+          } catch (e) {
+            console.warn(`Could not read file details: ${entry.name}`, e);
+          }
+        } else if (entry.kind === 'directory') {
+          await traverse(entry);
+        }
+      }
+    }
+    
+    await traverse(dirHandle);
+    
+    // Update count
+    if (trackedFolders.has(folderId)) {
+      trackedFolders.get(folderId).count = count;
+    }
+    
+    if (applyUINow) {
+      finishFilesLoading();
+    }
+  }
+
+  function createDefaultMetadata(fileId, filename, size, folderId) {
+    return {
+      id: fileId,
+      filename: filename,
+      size: size,
+      folderId: folderId,
+      title: '',
+      description: '',
+      tags: [],
+      thumbnail: null,
+      hasCustomThumbnail: false,
+      copiedStates: { title: false, description: false, tags: false },
+      isCopied: false,
+      isHidden: false
+    };
+  }
+
+  function finishFilesLoading() {
+    updateGlobalStats();
+    applyFiltersAndSorting();
+  }
+
+  async function removeTrackedFolder(folderId) {
+    const folder = trackedFolders.get(folderId);
+    if (!folder) return;
+    
+    if (confirm(`Are you sure you want to stop tracking folder "${folder.name}"?
+Videos inside this folder will be removed from your dashboard, but files on your disk will NOT be touched.`)) {
+      
+      // 1. Remove from database
+      await removeFolderFromDB(folderId);
+      
+      // 2. Remove associated files from memory map
+      for (const [fileId, wrapper] of filesMap.entries()) {
+        if (wrapper.folderId === folderId) {
+          filesMap.delete(fileId);
+        }
+      }
+      
+      // 3. Remove folder wrapper from memory
+      trackedFolders.delete(folderId);
+      
+      // 4. Update UI
+      renderFoldersSidebar();
+      finishFilesLoading();
+      
+      showToast(`Removed folder: "${folder.name}"`, 'info');
+      
+      // If modal was open and active file belonged to this folder, close modal
+      if (activeFileId && !filesMap.has(activeFileId)) {
+        closeVideoEditor();
+      }
+    }
+  }
+
+  function renderFoldersSidebar() {
+    foldersListContainer.innerHTML = '';
+    
+    if (trackedFolders.size === 0) {
+      foldersListContainer.innerHTML = '<div class="folders-empty-text">No folders tracked yet.</div>';
+      return;
+    }
+    
+    trackedFolders.forEach((folder) => {
+      const folderDiv = document.createElement('div');
+      folderDiv.className = 'folder-item';
+      
+      let statusIcon = 'folder';
+      let titleAttr = 'Access authorized';
+      if (!folder.authorized) {
+        statusIcon = 'shield-alert';
+        folderDiv.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+        titleAttr = 'Re-authorization required';
+      }
+      
+      folderDiv.innerHTML = `
+        <div class="folder-item-info" title="${titleAttr}">
+          <i data-lucide="${statusIcon}" class="${!folder.authorized ? 'text-amber' : ''}"></i>
+          <span class="folder-item-name" title="${folder.name}">${folder.name}</span>
+          <span class="folder-item-badge">${folder.count}</span>
+        </div>
+        <button class="remove-folder-btn" data-id="${folder.id}" title="Remove folder from manager">
+          <i data-lucide="trash-2"></i>
+        </button>
+      `;
+      
+      folderDiv.querySelector('.remove-folder-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        removeTrackedFolder(folder.id);
+      });
+      
+      foldersListContainer.appendChild(folderDiv);
+    });
+    
+    lucide.createIcons();
+  }
+
+  // --- Hiding/Removing Individual Videos ---
+  async function hideVideo(fileId, event) {
+    if (event) event.stopPropagation();
+    
+    const wrapper = filesMap.get(fileId);
+    if (!wrapper) return;
+    
+    if (wrapper.type === 'cloud') {
+      await removeCloudLink(wrapper.cloudId);
+      return;
+    }
+    
+    if (confirm(`Hide video "${wrapper.name}" from your manager?
+(This sets the hidden flag in database, files on your disk will NOT be touched.)`)) {
+      wrapper.metadata.isHidden = true;
+      
+      // Save flag to database
+      await saveMetadataRecord(wrapper.metadata);
+      
+      // Remove from map to exclude from list
+      filesMap.delete(fileId);
+      
+      // Update count in folder
+      const folder = trackedFolders.get(wrapper.folderId);
+      if (folder) folder.count = Math.max(0, folder.count - 1);
+      
+      // Update gallery views
+      renderFoldersSidebar();
+      finishFilesLoading();
+      
+      showToast('Video hidden from deck.', 'info');
+      
+      if (activeFileId === fileId) {
+        closeVideoEditor();
+      }
+    }
+  }
+
+  // --- Statistics ---
+  function updateGlobalStats() {
+    let total = 0;
+    let copied = 0;
+    
+    filesMap.forEach((wrapper) => {
+      if (!wrapper.metadata.isHidden) {
+        total++;
+        if (wrapper.metadata.isCopied) copied++;
+      }
+    });
+    
+    statTotalCount.textContent = total;
+    statCopiedCount.textContent = copied;
+  }
+
+  // --- Filters & Sorting ---
+  function applyFiltersAndSorting() {
+    const query = searchQuery.toLowerCase().trim();
+    const list = Array.from(filesMap.values());
+    
+    const filtered = list.filter(wrapper => {
+      // Exclude hidden
+      if (wrapper.metadata.isHidden) return false;
+      
+      // Match query
+      const matchesSearch = !query || 
+        wrapper.name.toLowerCase().includes(query) ||
+        (wrapper.metadata.title && wrapper.metadata.title.toLowerCase().includes(query)) ||
+        (wrapper.metadata.description && wrapper.metadata.description.toLowerCase().includes(query)) ||
+        (wrapper.metadata.tags && wrapper.metadata.tags.some(t => t.toLowerCase().includes(query)));
+        
+      if (!matchesSearch) return false;
+      
+      // Match Filter Mode
+      if (currentFilter === 'copied') return wrapper.metadata.isCopied === true;
+      if (currentFilter === 'not-copied') return !wrapper.metadata.isCopied;
+      if (currentFilter === 'has-thumbnail') return wrapper.metadata.hasCustomThumbnail === true;
+      if (currentFilter === 'missing-metadata') {
+        return !wrapper.metadata.title || !wrapper.metadata.description || !wrapper.metadata.tags || wrapper.metadata.tags.length === 0;
+      }
+      
+      return true;
+    });
+    
+    // Sort
+    filtered.sort((a, b) => {
+      if (currentSort === 'name-asc') {
+        return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
+      }
+      if (currentSort === 'name-desc') {
+        return b.name.localeCompare(a.name, undefined, { numeric: true, sensitivity: 'base' });
+      }
+      if (currentSort === 'size-desc') {
+        return b.size - a.size;
+      }
+      if (currentSort === 'date-desc') {
+        const timeA = a.lastModified || 0;
+        const timeB = b.lastModified || 0;
+        return timeB - timeA;
+      }
+      if (currentSort === 'date-asc') {
+        const timeA = a.lastModified || 0;
+        const timeB = b.lastModified || 0;
+        return timeA - timeB;
+      }
+      if (currentSort === 'folder-asc') {
+        const folderA = trackedFolders.get(a.folderId);
+        const folderB = trackedFolders.get(b.folderId);
+        const addedA = folderA ? (folderA.addedAt || 0) : 0;
+        const addedB = folderB ? (folderB.addedAt || 0) : 0;
+        if (addedA !== addedB) {
+          return addedA - addedB;
+        }
+        return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
+      }
+      if (currentSort === 'folder-desc') {
+        const folderA = trackedFolders.get(a.folderId);
+        const folderB = trackedFolders.get(b.folderId);
+        const addedA = folderA ? (folderA.addedAt || 0) : 0;
+        const addedB = folderB ? (folderB.addedAt || 0) : 0;
+        if (addedA !== addedB) {
+          return addedB - addedA;
+        }
+        return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
+      }
+      return 0;
+    });
+    
+    filteredFileIds = filtered.map(w => w.id);
+    renderCardsGrid();
+  }
+
+  function renderCardsGrid() {
+    videoCardsGrid.innerHTML = '';
+    
+    if (filteredFileIds.length === 0) {
+      videoCardsGrid.innerHTML = `
+        <div class="empty-state" style="grid-column: 1 / -1; padding: 40px 0;">
+          <i data-lucide="info" class="empty-icon text-muted" style="width:36px;height:36px;"></i>
+          <h3 style="font-size:0.95rem;margin-top:8px;">No matching videos found</h3>
+          <p style="font-size:0.75rem;">Try refining search terms or selecting another filter category.</p>
+        </div>
+      `;
+      lucide.createIcons();
+      return;
+    }
+    
+    const fragment = document.createDocumentFragment();
+    
+    filteredFileIds.forEach(id => {
+      const wrapper = filesMap.get(id);
+      const card = document.createElement('div');
+      card.className = 'video-card';
+      card.setAttribute('data-id', id);
+      
+      const hasTitle = !!wrapper.metadata.title;
+      const hasDesc = !!wrapper.metadata.description;
+      const hasTags = wrapper.metadata.tags && wrapper.metadata.tags.length > 0;
+      
+      const isCloud = wrapper.type === 'cloud';
+      const thumbSrc = wrapper.metadata.thumbnail || (isCloud ? wrapper.thumbnailUrl : null);
+      const thumbContent = thumbSrc 
+        ? `<img src="${thumbSrc}" class="card-thumbnail" alt="Thumbnail" loading="lazy">`
+        : `<div class="card-thumbnail-fallback">
+             <i data-lucide="video"></i>
+             <span>${getExtension(wrapper.name)}</span>
+           </div>`;
+           
+      const cloudBadgeHtml = isCloud 
+        ? `<div class="cloud-badge"><i data-lucide="cloud"></i><span>Cloud</span></div>`
+        : '';
+      
+      card.innerHTML = `
+        <div class="card-thumbnail-wrapper">
+          ${thumbContent}
+          ${cloudBadgeHtml}
+          <div class="copied-checkmark-badge ${wrapper.metadata.isCopied ? 'visible' : ''}">
+            <i data-lucide="check"></i>
+          </div>
+          <button class="card-remove-btn" title="Remove video card from deck">
+            <i data-lucide="trash"></i>
+          </button>
+        </div>
+        <div class="card-info">
+          <div class="card-title-group">
+            <span class="card-filename" title="${wrapper.name}">${wrapper.name}</span>
+            <span class="card-custom-title" title="${wrapper.metadata.title || ''}">${wrapper.metadata.title || '<span class="text-dim">Untitled</span>'}</span>
+          </div>
+          <div class="card-meta-indicators">
+            <span class="meta-indicator ${hasTitle ? 'active' : ''}" title="Title">T</span>
+            <span class="meta-indicator ${hasDesc ? 'active' : ''}" title="Description">D</span>
+            <span class="meta-indicator ${hasTags ? 'active' : ''}" title="Tags">#</span>
+          </div>
+        </div>
+      `;
+      
+      card.addEventListener('click', () => openVideoEditor(id));
+      
+      // Hide button listener
+      card.querySelector('.card-remove-btn').addEventListener('click', (e) => {
+        hideVideo(id, e);
+      });
+      
+      fragment.appendChild(card);
+    });
+    
+    videoCardsGrid.appendChild(fragment);
+    lucide.createIcons();
+  }
+
+  // --- Popup Overlay Editor ---
+  async function openVideoEditor(id) {
+    activeFileId = id;
+    const wrapper = filesMap.get(id);
+    if (!wrapper) return;
+    
+    // Revoke previous player url if any
+    const oldSrc = mainPlayer.src;
+    mainPlayer.src = '';
+    if (oldSrc && oldSrc.startsWith('blob:')) {
+      try {
+        URL.revokeObjectURL(oldSrc);
+      } catch (e) {}
+    }
+    
+    // Clear cloud player src
+    cloudPlayer.src = '';
+    
+    // Load inputs
+    if (wrapper.type === 'cloud') {
+      activeVideoSize.textContent = 'Cloud Link';
+      activeVideoFilename.innerHTML = `${wrapper.name} <span class="cloud-source-badge"><i data-lucide="cloud"></i> Google Drive</span>`;
+      regenerateThumbnailBtn.classList.add('hidden');
+      activeCloudId = wrapper.cloudId;
+    } else {
+      activeVideoFilename.textContent = wrapper.name;
+      activeVideoSize.textContent = formatBytes(wrapper.size);
+      regenerateThumbnailBtn.classList.remove('hidden');
+      activeCloudId = null;
+    }
+    
+    titleInput.value = wrapper.metadata.title || '';
+    descriptionInput.value = wrapper.metadata.description || '';
+    activeTags = [...(wrapper.metadata.tags || [])];
+    
+    updateCharCounts();
+    renderTagsChips();
+    
+    const thumbnailToRender = wrapper.metadata.thumbnail || (wrapper.type === 'cloud' ? wrapper.thumbnailUrl : null);
+    renderThumbnailPreview(thumbnailToRender);
+    
+    // Save status reset
+    saveStatus.className = 'save-status-indicator';
+    saveStatus.textContent = '';
+    
+    // Load player
+    if (wrapper.type === 'cloud') {
+      mainPlayer.classList.add('hidden');
+      cloudPlayer.classList.remove('hidden');
+      if (isOnline) {
+        cloudPlayer.src = wrapper.previewUrl;
+      } else {
+        showToast('You are offline. Cannot load cloud player preview.', 'error');
+      }
+    } else {
+      cloudPlayer.classList.add('hidden');
+      mainPlayer.classList.remove('hidden');
+      try {
+        mainPlayer.src = URL.createObjectURL(wrapper.file);
+      } catch (err) {
+        console.error(err);
+        showToast('Playback not natively supported for this codec.', 'error');
+      }
+    }
+    
+    // Reveal Modal
+    editorModal.classList.remove('hidden');
+    lucide.createIcons();
+  }
+
+  function closeVideoEditor() {
+    if (!activeFileId) return;
+    
+    // Final save if auto save active
+    if (autoSaveEnabled) {
+      saveActiveMetadataSilent();
+    }
+    
+    // Stop video playback and release file blob URL
+    try {
+      mainPlayer.pause();
+    } catch (e) {}
+    const oldSrc = mainPlayer.src;
+    mainPlayer.src = '';
+    if (oldSrc && oldSrc.startsWith('blob:')) {
+      try {
+        URL.revokeObjectURL(oldSrc);
+      } catch (e) {}
+    }
+    
+    // Clear cloud player src
+    cloudPlayer.src = '';
+    
+    // Hide Modal
+    editorModal.classList.add('hidden');
+    activeFileId = null;
+    
+    // Re-apply filters/sorting to refresh grid values
+    applyFiltersAndSorting();
+    updateGlobalStats();
+  }
+
+  // --- Character Counters ---
+  function updateCharCounts() {
+    const titleLen = titleInput.value.length;
+    titleCharCount.textContent = `${titleLen} / 100`;
+    titleCharCount.classList.toggle('text-emerald', titleLen > 0);
+    
+    const descLen = descriptionInput.value.length;
+    descCharCount.textContent = `${descLen} / 5000`;
+    descCharCount.classList.toggle('text-emerald', descLen > 0);
+  }
+
+  // --- YouTube Chips Manager ---
+  function renderTagsChips() {
+    tagsList.innerHTML = '';
+    activeTags.forEach(tag => {
+      const chip = document.createElement('span');
+      chip.className = 'tag-chip';
+      chip.innerHTML = `
+        <span>${tag}</span>
+        <button class="tag-remove" data-tag="${tag}" title="Remove tag">
+          <i data-lucide="x"></i>
+        </button>
+      `;
+      
+      chip.querySelector('.tag-remove').addEventListener('click', (e) => {
+        e.stopPropagation();
+        removeTag(tag);
+      });
+      
+      tagsList.appendChild(chip);
+    });
+    
+    const tagString = activeTags.join(',');
+    const charCount = tagString.length;
+    tagsCount.textContent = `${charCount} / 500`;
+    tagsCount.classList.toggle('text-emerald', charCount > 0);
+    tagsCount.classList.toggle('text-danger', charCount > 500);
+    
+    lucide.createIcons();
+  }
+
+  function addTag(value) {
+    const cleanTag = value.replace(/,/g, '').trim();
+    if (!cleanTag) return;
+    
+    const projectedString = [...activeTags, cleanTag].join(',');
+    if (projectedString.length > 500) {
+      showToast('Tags length limit reached.', 'error');
+      return;
+    }
+    
+    if (activeTags.includes(cleanTag)) {
+      tagsInputElement.value = '';
+      return;
+    }
+    
+    activeTags.push(cleanTag);
+    tagsInputElement.value = '';
+    renderTagsChips();
+    triggerAutoSave();
+  }
+
+  function removeTag(tagToRemove) {
+    activeTags = activeTags.filter(t => t !== tagToRemove);
+    renderTagsChips();
+    triggerAutoSave();
+  }
+
+  // --- Thumbnail Control ---
+  function renderThumbnailPreview(dataUrl) {
+    if (dataUrl) {
+      thumbnailPreviewImg.src = dataUrl;
+      thumbnailPreviewImg.classList.remove('hidden');
+      thumbnailPlaceholder.classList.add('hidden');
+      removeThumbnailBtn.classList.remove('hidden');
+      downloadThumbnailBtn.classList.remove('hidden');
+    } else {
+      thumbnailPreviewImg.src = '';
+      thumbnailPreviewImg.classList.add('hidden');
+      thumbnailPlaceholder.classList.remove('hidden');
+      removeThumbnailBtn.classList.add('hidden');
+      downloadThumbnailBtn.classList.add('hidden');
+    }
+  }
+
+  function downloadActiveThumbnail() {
+    if (!activeFileId) return;
+    const wrapper = filesMap.get(activeFileId);
+    if (!wrapper || !wrapper.metadata.thumbnail) {
+      showToast('No thumbnail to download.', 'error');
+      return;
+    }
+    
+    const dataUrl = wrapper.metadata.thumbnail;
+    const baseName = wrapper.name.substring(0, wrapper.name.lastIndexOf('.')) || wrapper.name;
+    
+    // 1. Base64 Data URL
+    if (dataUrl.startsWith('data:')) {
+      let ext = 'webp';
+      const match = dataUrl.match(/^data:image\/(\w+);base64,/);
+      if (match) {
+        ext = match[1];
+      }
+      const downloadName = `${baseName}_thumbnail.${ext}`;
+      
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = downloadName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast('Thumbnail download started.', 'success');
+      return;
+    }
+    
+    // 2. Google Drive URL
+    const isGDrive = dataUrl.includes('drive.google.com') || dataUrl.includes('id=');
+    if (isGDrive) {
+      const idMatch = dataUrl.match(/id=([a-zA-Z0-9_-]+)/);
+      if (idMatch) {
+        const fileId = idMatch[1];
+        const downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
+        window.open(downloadUrl, '_blank');
+        showToast('Redirected to Google Drive thumbnail download page.', 'success');
+        return;
+      }
+    }
+    
+    // 3. General HTTP/HTTPS URL
+    const ext = dataUrl.split('.').pop().split(/[?#]/)[0] || 'jpg';
+    const downloadName = `${baseName}_thumbnail.${ext}`;
+    
+    fetch(dataUrl)
+      .then(response => {
+        if (!response.ok) throw new Error('Network error');
+        return response.blob();
+      })
+      .then(blob => {
+        const blobUrl = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = downloadName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+        showToast('Thumbnail download started.', 'success');
+      })
+      .catch(() => {
+        // Fallback: open in new tab
+        window.open(dataUrl, '_blank');
+        showToast('Opened image in new tab (download blocked by CORS).', 'info');
+      });
+  }
+
+  function downloadActiveVideo() {
+    if (!activeFileId) return;
+    const wrapper = filesMap.get(activeFileId);
+    if (!wrapper) return;
+    
+    if (wrapper.type === 'cloud') {
+      if (!isOnline) {
+        showToast('You are offline. Cannot download cloud files.', 'error');
+        return;
+      }
+      window.open(wrapper.downloadUrl, '_blank');
+      showToast('Redirected to Google Drive download page.', 'success');
+      return;
+    }
+    
+    if (!wrapper.file) {
+      showToast('No video file available to download.', 'error');
+      return;
+    }
+    
+    const blobUrl = URL.createObjectURL(wrapper.file);
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = wrapper.name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Revoke after short delay to ensure download starts
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+    showToast('Video download started.', 'success');
+  }
+
+  function selectCustomThumbnail() {
+    thumbnailFileInput.click();
+  }
+
+  function handleCustomThumbnailFile(file) {
+    if (!file || !isImageFile(file.name)) {
+      showToast('Please select a valid image.', 'error');
+      return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const dataUrl = e.target.result;
+      renderThumbnailPreview(dataUrl);
+      
+      if (activeFileId) {
+        const wrapper = filesMap.get(activeFileId);
+        wrapper.metadata.thumbnail = dataUrl;
+        wrapper.metadata.hasCustomThumbnail = true;
+        
+        // Update Card
+        updateCardThumbnailUI(activeFileId, dataUrl);
+        
+        showToast('Custom thumbnail uploaded.', 'success');
+        triggerAutoSave();
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function removeThumbnail() {
+    if (!activeFileId) return;
+    const wrapper = filesMap.get(activeFileId);
+    if (!wrapper) return;
+    
+    wrapper.metadata.thumbnail = null;
+    wrapper.metadata.hasCustomThumbnail = false;
+    
+    const thumbnailToRender = wrapper.type === 'cloud' ? wrapper.thumbnailUrl : null;
+    renderThumbnailPreview(thumbnailToRender);
+    updateCardThumbnailUI(activeFileId, thumbnailToRender);
+    
+    showToast('Custom thumbnail cleared.', 'info');
+    triggerAutoSave();
+  }
+
+  function updateCardThumbnailUI(id, dataUrl) {
+    const card = document.querySelector(`.video-card[data-id="${id}"]`);
+    if (!card) return;
+    
+    const wrapper = filesMap.get(id);
+    const wrapperElement = card.querySelector('.card-thumbnail-wrapper');
+    if (!wrapperElement) return;
+    
+    const prevImg = wrapperElement.querySelector('.card-thumbnail');
+    const prevFallback = wrapperElement.querySelector('.card-thumbnail-fallback');
+    if (prevImg) prevImg.remove();
+    if (prevFallback) prevFallback.remove();
+    
+    const checkBadge = wrapperElement.querySelector('.copied-checkmark-badge');
+    const removeBtn = wrapperElement.querySelector('.card-remove-btn');
+    
+    if (dataUrl) {
+      const img = document.createElement('img');
+      img.src = dataUrl;
+      img.className = 'card-thumbnail';
+      img.alt = 'Thumbnail';
+      img.loading = 'lazy';
+      wrapperElement.insertBefore(img, checkBadge);
+    } else {
+      const fallback = document.createElement('div');
+      fallback.className = 'card-thumbnail-fallback';
+      fallback.innerHTML = `
+        <i data-lucide="video"></i>
+        <span>${getExtension(wrapper.name)}</span>
+      `;
+      wrapperElement.insertBefore(fallback, checkBadge);
+      lucide.createIcons();
+    }
+  }
+
+  // --- Background Auto-Thumbnailer ---
+  function queueThumbnails() {
+    thumbnailQueue = Array.from(filesMap.values())
+      .filter(w => w.type !== 'cloud' && !w.metadata.thumbnail && !w.metadata.isHidden)
+      .map(w => w.id);
+      
+    if (thumbnailQueue.length > 0 && !isGeneratingThumbnail) {
+      generateNextThumbnail();
+    }
+  }
+
+  async function generateNextThumbnail() {
+    if (thumbnailQueue.length === 0) {
+      isGeneratingThumbnail = false;
+      return;
+    }
+    
+    isGeneratingThumbnail = true;
+    const fileId = thumbnailQueue.shift();
+    const wrapper = filesMap.get(fileId);
+    
+    if (!wrapper || wrapper.metadata.thumbnail || wrapper.metadata.isHidden) {
+      setTimeout(generateNextThumbnail, 50);
+      return;
+    }
+    
+    try {
+      const dataUrl = await generateVideoThumbnail(wrapper.file);
+      wrapper.metadata.thumbnail = dataUrl;
+      
+      // Update IndexedDB in background
+      await saveMetadataRecord(wrapper.metadata);
+      
+      // Refresh UI card
+      updateCardThumbnailUI(fileId, dataUrl);
+      
+      if (activeFileId === fileId) {
+        renderThumbnailPreview(dataUrl);
+      }
+    } catch (err) {
+      console.warn(`Could not generate thumbnail for: ${wrapper.name}`, err);
+    }
+    
+    setTimeout(generateNextThumbnail, 200);
+  }
+
+  function generateVideoThumbnail(videoFile) {
+    return new Promise((resolve, reject) => {
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+      video.muted = true;
+      video.playsInline = true;
+      
+      const objectUrl = URL.createObjectURL(videoFile);
+      video.src = objectUrl;
+      
+      video.onloadedmetadata = () => {
+        const seekTime = Math.min(1.5, video.duration * 0.1);
+        video.currentTime = seekTime;
+      };
+      
+      video.onseeked = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = 320;
+          canvas.height = 180;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          
+          const dataUrl = canvas.toDataURL('image/webp', 0.85);
+          
+          URL.revokeObjectURL(objectUrl);
+          video.remove();
+          resolve(dataUrl);
+        } catch (e) {
+          URL.revokeObjectURL(objectUrl);
+          video.remove();
+          reject(e);
+        }
+      };
+      
+      video.onerror = (e) => {
+        URL.revokeObjectURL(objectUrl);
+        video.remove();
+        reject(e);
+      };
+      
+      setTimeout(() => {
+        URL.revokeObjectURL(objectUrl);
+        video.remove();
+        reject(new Error('Thumbnail seek timeout'));
+      }, 10000);
+    });
+  }
+
+  // --- Copy Actions ---
+  async function copyField(field) {
+    if (!activeFileId) return;
+    const wrapper = filesMap.get(activeFileId);
+    if (!wrapper) return;
+    
+    let textToCopy = '';
+    let feedbackElement = null;
+    let fieldKey = '';
+    
+    if (field === 'title') {
+      textToCopy = titleInput.value.trim();
+      feedbackElement = titleInput.parentElement;
+      fieldKey = 'title';
+    } else if (field === 'description') {
+      textToCopy = descriptionInput.value.trim();
+      feedbackElement = descriptionInput.parentElement;
+      fieldKey = 'description';
+    } else if (field === 'tags') {
+      textToCopy = activeTags.join(', ');
+      feedbackElement = tagsContainer.parentElement;
+      fieldKey = 'tags';
+    }
+    
+    if (!textToCopy) {
+      showToast(`No content to copy inside ${field}.`, 'error');
+      return;
+    }
+    
+    try {
+      await navigator.clipboard.writeText(textToCopy);
+      
+      // Success visual feedback
+      feedbackElement.classList.add('flash-success');
+      setTimeout(() => feedbackElement.classList.remove('flash-success'), 550);
+      
+      showToast(`Copied ${field} to clipboard!`, 'success');
+      
+      wrapper.metadata.copiedStates[fieldKey] = true;
+      wrapper.metadata.isCopied = true;
+      
+      // Update sidebar checkbox value directly
+      const card = document.querySelector(`.video-card[data-id="${activeFileId}"]`);
+      if (card) {
+        const check = card.querySelector('.copied-checkmark-badge');
+        if (check) check.classList.add('visible');
+      }
+      
+      updateGlobalStats();
+      
+      // Save metadata immediately since copy is an explicit action
+      await saveMetadataRecord(wrapper.metadata);
+      
+      triggerAutoSave();
+    } catch (err) {
+      showToast('Clipboard access blocked.', 'error');
+    }
+  }
+
+  async function copyAllFields() {
+    if (!activeFileId) return;
+    const wrapper = filesMap.get(activeFileId);
+    
+    const clipboardText = `TITLE:
+${titleInput.value.trim()}
+
+DESCRIPTION:
+${descriptionInput.value.trim()}
+
+TAGS:
+${activeTags.join(', ')}`;
+    
+    try {
+      await navigator.clipboard.writeText(clipboardText);
+      showToast('Copied all fields successfully!', 'success');
+      
+      // Pulse animation
+      const modalBox = document.querySelector('.modal-editor-content');
+      modalBox.classList.add('flash-success');
+      setTimeout(() => modalBox.classList.remove('flash-success'), 550);
+      
+      wrapper.metadata.copiedStates.title = true;
+      wrapper.metadata.copiedStates.description = true;
+      wrapper.metadata.copiedStates.tags = true;
+      wrapper.metadata.isCopied = true;
+      
+      const card = document.querySelector(`.video-card[data-id="${activeFileId}"]`);
+      if (card) {
+        const check = card.querySelector('.copied-checkmark-badge');
+        if (check) check.classList.add('visible');
+      }
+      
+      updateGlobalStats();
+      
+      // Save metadata immediately since copy is an explicit action
+      await saveMetadataRecord(wrapper.metadata);
+      
+      triggerAutoSave();
+    } catch (err) {
+      showToast('Failed to copy metadata.', 'error');
+    }
+  }
+
+  // --- Save Logic ---
+  async function saveActiveVideoMetadata() {
+    if (!activeFileId) return;
+    const wrapper = filesMap.get(activeFileId);
+    
+    wrapper.metadata.title = titleInput.value.trim();
+    wrapper.metadata.description = descriptionInput.value.trim();
+    wrapper.metadata.tags = [...activeTags];
+    
+    showSaveStatus('Saving...', 'info');
+    
+    try {
+      await saveMetadataRecord(wrapper.metadata);
+      
+      // Update visual card subtitle
+      const card = document.querySelector(`.video-card[data-id="${activeFileId}"]`);
+      if (card) {
+        const titleSpan = card.querySelector('.card-custom-title');
+        if (titleSpan) titleSpan.innerHTML = wrapper.metadata.title || '<span class="text-dim">Untitled</span>';
+        
+        const indicators = card.querySelectorAll('.meta-indicator');
+        if (indicators.length >= 3) {
+          indicators[0].classList.toggle('active', !!wrapper.metadata.title);
+          indicators[1].classList.toggle('active', !!wrapper.metadata.description);
+          indicators[2].classList.toggle('active', wrapper.metadata.tags.length > 0);
+        }
+      }
+      
+      showSaveStatus('Saved successfully', 'success');
+      showToast('Metadata updated.', 'success');
+    } catch (err) {
+      showSaveStatus('Save failed', 'error');
+    }
+  }
+
+  async function saveActiveMetadataSilent() {
+    if (!activeFileId) return;
+    const wrapper = filesMap.get(activeFileId);
+    
+    wrapper.metadata.title = titleInput.value.trim();
+    wrapper.metadata.description = descriptionInput.value.trim();
+    wrapper.metadata.tags = [...activeTags];
+    
+    try {
+      await saveMetadataRecord(wrapper.metadata);
+      showSaveStatus('Auto-saved', 'success');
+    } catch (err) {
+      console.warn('Auto-save write failed', err);
+    }
+  }
+
+  function triggerAutoSave() {
+    if (!autoSaveEnabled || !activeFileId) return;
+    
+    showSaveStatus('Typing...', 'info');
+    if (autoSaveTimeout) clearTimeout(autoSaveTimeout);
+    
+    autoSaveTimeout = setTimeout(() => {
+      saveActiveMetadataSilent();
+    }, 300);
+  }
+
+  function showSaveStatus(text, type) {
+    saveStatus.className = 'save-status-indicator visible';
+    if (type === 'success') saveStatus.classList.add('success');
+    if (type === 'info') saveStatus.classList.add('info');
+    saveStatus.textContent = text;
+  }
+
+  // --- Keyboard Slide Navigation inside Modal ---
+  function navigateGalleryModal(direction) {
+    if (filteredFileIds.length === 0 || !activeFileId) return;
+    
+    const currentIndex = filteredFileIds.indexOf(activeFileId);
+    let nextIndex = 0;
+    
+    if (direction === 'left') {
+      nextIndex = currentIndex <= 0 ? filteredFileIds.length - 1 : currentIndex - 1;
+    } else {
+      nextIndex = currentIndex === -1 || currentIndex === filteredFileIds.length - 1 ? 0 : currentIndex + 1;
+    }
+    
+    const nextId = filteredFileIds[nextIndex];
+    
+    // Automatically select and swap contents inside modal
+    openVideoEditor(nextId);
+  }
+
+  // --- Event Bindings ---
+  function setupEventHandlers() {
+    // 1. Folders Add
+    selectFolderBtn.addEventListener('click', addFolder);
+    sidebarAddFolderBtn.addEventListener('click', addFolder);
+    
+    // 2. Re-authorization button
+    reauthBtn.addEventListener('click', restoreAccess);
+    
+    // 3. Search input events
+    searchInput.addEventListener('input', (e) => {
+      searchQuery = e.target.value;
+      clearSearchBtn.classList.toggle('hidden', searchQuery.length === 0);
+      applyFiltersAndSorting();
+    });
+    
+    clearSearchBtn.addEventListener('click', () => {
+      searchInput.value = '';
+      searchQuery = '';
+      clearSearchBtn.classList.add('hidden');
+      applyFiltersAndSorting();
+      searchInput.focus();
+    });
+    
+    // 4. Sort and filters
+    sortSelect.addEventListener('change', (e) => {
+      currentSort = e.target.value;
+      localStorage.setItem('vidiflow_sort', currentSort);
+      applyFiltersAndSorting();
+    });
+    
+    filterChips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        filterChips.forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        currentFilter = chip.getAttribute('data-filter');
+        localStorage.setItem('vidiflow_filter', currentFilter);
+        applyFiltersAndSorting();
+      });
+    });
+    
+    // 5. Form input autosaves
+    titleInput.addEventListener('input', () => {
+      updateCharCounts();
+      triggerAutoSave();
+    });
+    descriptionInput.addEventListener('input', () => {
+      updateCharCounts();
+      triggerAutoSave();
+    });
+    
+    // 6. Copy triggers
+    copyTitleBtn.addEventListener('click', () => copyField('title'));
+    copyDescriptionBtn.addEventListener('click', () => copyField('description'));
+    copyTagsBtn.addEventListener('click', () => copyField('tags'));
+    copyAllBtn.addEventListener('click', copyAllFields);
+    
+    // Copy filename directly when clicking player filename title
+    activeVideoFilename.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(activeVideoFilename.textContent);
+        showToast('Filename copied to clipboard!', 'success');
+      } catch (err) {
+        showToast('Clipboard access denied.', 'error');
+      }
+    });
+
+    // 7. Save metadata
+    saveMetadataBtn.addEventListener('click', saveActiveVideoMetadata);
+    
+    // 8. Auto Save setting
+    autoSaveToggle.addEventListener('change', (e) => {
+      autoSaveEnabled = e.target.checked;
+      localStorage.setItem('vidiflow_autosave', autoSaveEnabled);
+      showToast(autoSaveEnabled ? 'Auto-Save enabled.' : 'Auto-Save disabled.', 'info');
+      if (autoSaveEnabled) saveActiveVideoMetadata();
+    });
+    
+    // 9. Keyboard Shortcuts list modal
+    shortcutsInfoBtn.addEventListener('click', () => {
+      shortcutsModal.classList.remove('hidden');
+    });
+    closeShortcutsBtn.addEventListener('click', () => {
+      shortcutsModal.classList.add('hidden');
+    });
+    shortcutsModal.addEventListener('click', (e) => {
+      if (e.target === shortcutsModal) shortcutsModal.classList.add('hidden');
+    });
+    
+    // 10. Tags comma/enter hook
+    tagsInputElement.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ',') {
+        e.preventDefault();
+        addTag(tagsInputElement.value);
+      } else if (e.key === 'Backspace' && !tagsInputElement.value && activeTags.length > 0) {
+        removeTag(activeTags[activeTags.length - 1]);
+      }
+    });
+    tagsContainer.addEventListener('click', () => tagsInputElement.focus());
+
+    // 10a. Paste handler — auto-split comma-separated tags (YouTube-style)
+    tagsInputElement.addEventListener('paste', (e) => {
+      e.preventDefault();
+      const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+      if (!pastedText) return;
+
+      // If the pasted text contains commas, split into individual tags
+      if (pastedText.includes(',')) {
+        // Parse respecting quoted segments: "multi word tag", another tag
+        const rawTags = [];
+        let current = '';
+        let inQuotes = false;
+        
+        for (let i = 0; i < pastedText.length; i++) {
+          const ch = pastedText[i];
+          if (ch === '"' || ch === '\u2018' || ch === '\u2019' || ch === '\u201C' || ch === '\u201D') {
+            inQuotes = !inQuotes;
+          } else if (ch === ',' && !inQuotes) {
+            rawTags.push(current);
+            current = '';
+          } else {
+            current += ch;
+          }
+        }
+        if (current) rawTags.push(current);
+
+        let addedCount = 0;
+        rawTags.forEach(raw => {
+          const cleaned = raw.replace(/,/g, '').trim();
+          if (cleaned) {
+            // Check 500-char limit
+            const projectedString = [...activeTags, cleaned].join(',');
+            if (projectedString.length <= 500 && !activeTags.includes(cleaned)) {
+              activeTags.push(cleaned);
+              addedCount++;
+            }
+          }
+        });
+
+        tagsInputElement.value = '';
+        renderTagsChips();
+        triggerAutoSave();
+
+        if (addedCount > 0) {
+          showToast(`Added ${addedCount} tag${addedCount > 1 ? 's' : ''} from paste.`, 'success');
+        }
+      } else {
+        // No commas — just insert the text normally into the input
+        const existingVal = tagsInputElement.value;
+        const start = tagsInputElement.selectionStart;
+        const end = tagsInputElement.selectionEnd;
+        tagsInputElement.value = existingVal.slice(0, start) + pastedText + existingVal.slice(end);
+        tagsInputElement.setSelectionRange(start + pastedText.length, start + pastedText.length);
+      }
+    });
+    
+    // 11. Modal Close Click
+    closeEditorBtn.addEventListener('click', closeVideoEditor);
+    
+    // Close editor if overlay backdrop clicked
+    editorModal.addEventListener('click', (e) => {
+      if (e.target === editorModal) {
+        closeVideoEditor();
+      }
+    });
+    
+    // 12. Thumbnail uploads
+    selectThumbnailBtn.addEventListener('click', selectCustomThumbnail);
+    thumbnailFileInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        handleCustomThumbnailFile(e.target.files[0]);
+      }
+    });
+    removeThumbnailBtn.addEventListener('click', removeThumbnail);
+    
+    regenerateThumbnailBtn.addEventListener('click', async () => {
+      if (!activeFileId) return;
+      const wrapper = filesMap.get(activeFileId);
+      
+      showToast('Extracting thumbnail frame...', 'info');
+      try {
+        const url = await generateVideoThumbnail(wrapper.file);
+        wrapper.metadata.thumbnail = url;
+        wrapper.metadata.hasCustomThumbnail = false; // System generated
+        renderThumbnailPreview(url);
+        updateCardThumbnailUI(activeFileId, url);
+        await saveMetadataRecord(wrapper.metadata);
+        showToast('Thumbnail regenerated.', 'success');
+      } catch (err) {
+        showToast('Frame extraction failed.', 'error');
+      }
+    });
+    
+    // 13. Drag and Drop images onto Thumbnail preview
+    thumbnailDropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      thumbnailDropZone.classList.add('dragover');
+    });
+    thumbnailDropZone.addEventListener('dragleave', () => {
+      thumbnailDropZone.classList.remove('dragover');
+    });
+    thumbnailDropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      thumbnailDropZone.classList.remove('dragover');
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        handleCustomThumbnailFile(files[0]);
+      }
+    });
+    
+    // 14. Prevent default drops on window (no drag-drop folder support)
+    window.addEventListener('dragover', (e) => e.preventDefault());
+    window.addEventListener('drop', (e) => e.preventDefault());
+
+    // 14a. Lightbox / Download Events
+    downloadThumbnailBtn.addEventListener('click', downloadActiveThumbnail);
+    lightboxDownloadBtn.addEventListener('click', downloadActiveThumbnail);
+    downloadVideoBtn.addEventListener('click', downloadActiveVideo);
+    
+    thumbnailPreviewImg.addEventListener('click', () => {
+      if (!activeFileId) return;
+      const wrapper = filesMap.get(activeFileId);
+      if (!wrapper || !wrapper.metadata.thumbnail) return;
+      
+      lightboxImg.src = wrapper.metadata.thumbnail;
+      lightboxFilename.textContent = `${wrapper.name} - Thumbnail Preview`;
+      lightboxModal.classList.remove('hidden');
+    });
+    
+    lightboxCloseBtn.addEventListener('click', () => {
+      lightboxModal.classList.add('hidden');
+      lightboxImg.src = '';
+    });
+    
+    lightboxModal.addEventListener('click', (e) => {
+      if (e.target === lightboxModal) {
+        lightboxModal.classList.add('hidden');
+        lightboxImg.src = '';
+      }
+    });
+
+    // 15. Global Keyboard Shortcuts
+    window.addEventListener('keydown', (e) => {
+      const activeElement = document.activeElement;
+      const isInputFocused = activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA';
+      const isModalOpen = !editorModal.classList.contains('hidden');
+      
+      // Ctrl + S (Save Metadata)
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        if (activeFileId) saveActiveVideoMetadata();
+      }
+      
+      // Ctrl + Shift + C (Copy All)
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'c') {
+        e.preventDefault();
+        if (activeFileId) copyAllFields();
+      }
+      
+      // Alt + A (Toggle Auto-Save)
+      if (e.altKey && e.key.toLowerCase() === 'a') {
+        e.preventDefault();
+        autoSaveToggle.click();
+      }
+      
+      // Esc (Close windows)
+      if (e.key === 'Escape') {
+        if (!lightboxModal.classList.contains('hidden')) {
+          lightboxModal.classList.add('hidden');
+          lightboxImg.src = '';
+        } else if (!shortcutsModal.classList.contains('hidden')) {
+          shortcutsModal.classList.add('hidden');
+        } else if (!cloudLinkModal.classList.contains('hidden')) {
+          closeCloudLinkModal();
+        } else if (!cloudThumbnailModal.classList.contains('hidden')) {
+          closeCloudThumbnailModal();
+        } else if (isModalOpen) {
+          closeVideoEditor();
+        }
+      }
+      
+      // Left/Right arrows inside modal (Gallery Navigation)
+      if (isModalOpen && !isInputFocused) {
+        if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          navigateGalleryModal('left');
+        } else if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          navigateGalleryModal('right');
+        }
+      }
+    });
+
+    // 16. Flush auto-save on tab close/reload
+    window.addEventListener('beforeunload', () => {
+      if (autoSaveTimeout) {
+        clearTimeout(autoSaveTimeout);
+        saveActiveMetadataSilent();
+      }
+    });
+
+    // 17. Cloud Links Modal & Submission event listeners
+    if (addCloudLinkBtn) addCloudLinkBtn.addEventListener('click', openCloudLinkModal);
+    if (sidebarAddCloudBtn) sidebarAddCloudBtn.addEventListener('click', openCloudLinkModal);
+    if (closeCloudModalBtn) closeCloudModalBtn.addEventListener('click', closeCloudLinkModal);
+    if (cloudCancelBtn) cloudCancelBtn.addEventListener('click', closeCloudLinkModal);
+    if (cloudSaveBtn) cloudSaveBtn.addEventListener('click', saveCloudLink);
+    if (cloudUrlInput) cloudUrlInput.addEventListener('input', handleCloudUrlInput);
+    
+    if (cloudLinkModal) {
+      cloudLinkModal.addEventListener('click', (e) => {
+        if (e.target === cloudLinkModal) {
+          closeCloudLinkModal();
+        }
+      });
+    }
+
+    // 18. Cloud Thumbnail events
+    if (cloudThumbnailBtn) cloudThumbnailBtn.addEventListener('click', openCloudThumbnailModal);
+    if (closeThumbModalBtn) closeThumbModalBtn.addEventListener('click', closeCloudThumbnailModal);
+    if (thumbCancelBtn) thumbCancelBtn.addEventListener('click', closeCloudThumbnailModal);
+    if (thumbSaveBtn) thumbSaveBtn.addEventListener('click', saveCloudThumbnailLink);
+    
+    if (cloudThumbnailModal) {
+      cloudThumbnailModal.addEventListener('click', (e) => {
+        if (e.target === cloudThumbnailModal) {
+          closeCloudThumbnailModal();
+        }
+      });
+    }
+  }
+
+})();
+
+</script>
+<!-- Firebase Initialization -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCruuZ0o02CPH1EmsRc6cWUT9rdw5Lat1o",
+    authDomain: "vidiflow-402fb.firebaseapp.com",
+    projectId: "vidiflow-402fb",
+    storageBucket: "vidiflow-402fb.firebasestorage.app",
+    messagingSenderId: "128189158696",
+    appId: "1:128189158696:web:e76e2f0bd4d00748226c1d",
+    measurementId: "G-25803JS38S"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+</script>
+</body>
+</html>
