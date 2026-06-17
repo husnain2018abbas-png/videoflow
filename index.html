@@ -1855,6 +1855,35 @@ body {
   
   <!-- Lucide Icons CDN -->
   <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Firebase SDK (module) - loaded early so Firestore is ready -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+    import { getFirestore, collection, doc, setDoc, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAIArjAGjcgQowCKSFmZt_C1WdIGVMS9gg",
+      authDomain: "vidi-46d45.firebaseapp.com",
+      projectId: "vidi-46d45",
+      storageBucket: "vidi-46d45.firebasestorage.app",
+      messagingSenderId: "1091175122634",
+      appId: "1:1091175122634:web:2c8d8d90b9e9f6d082d633"
+    };
+
+    const firebaseApp = initializeApp(firebaseConfig);
+    const firestoreDb = getFirestore(firebaseApp);
+
+    // Expose Firestore helpers to the main (non-module) script via window
+    window._fbFirestore = firestoreDb;
+    window._fbCollection = collection;
+    window._fbDoc = doc;
+    window._fbSetDoc = setDoc;
+    window._fbDeleteDoc = deleteDoc;
+    window._fbGetDocs = getDocs;
+
+    // Signal that Firebase is ready
+    window.dispatchEvent(new Event('firebase-ready'));
+  </script>
 </head>
 <body>
 
@@ -2297,7 +2326,17 @@ body {
   const DB_VERSION = 2;
   const STORE_METADATA = 'metadata';
   const STORE_FOLDERS = 'folders';
-  const STORE_CLOUD_LINKS = 'cloudLinks';
+  // Cloud links now stored in Firebase Firestore (online)
+  const FIRESTORE_CLOUD_COLLECTION = 'cloudLinks';
+
+  // Firebase Firestore helpers (set by the module script above)
+  let _fbReady = false;
+  function waitForFirebase() {
+    return new Promise((resolve) => {
+      if (window._fbFirestore) { resolve(); return; }
+      window.addEventListener('firebase-ready', () => resolve(), { once: true });
+    });
+  }
 
   let db = null;
   let trackedFolders = new Map(); // Key: folderId, Value: FolderWrapper {id, name, handle, count}
@@ -2413,7 +2452,7 @@ body {
 
   // --- Initialize App ---
   document.addEventListener('DOMContentLoaded', async () => {
-    // Open Database
+    // Open IndexedDB (for local video metadata & folder handles)
     await initDB();
     
     // Load Auto-Save setting
@@ -2448,10 +2487,11 @@ body {
     // Internet connectivity detection
     setupInternetDetection();
     
-    // Restore Folders
+    // Restore local Folders (IndexedDB)
     await loadTrackedFoldersFromDB();
     
-    // Restore Cloud Links
+    // Restore Cloud Links from Firebase Firestore (online)
+    showToast('Loading cloud links from Firebase...', 'info');
     await loadCloudLinksFromDB();
     
     lucide.createIcons();
@@ -2482,10 +2522,7 @@ body {
         if (!database.objectStoreNames.contains(STORE_FOLDERS)) {
           database.createObjectStore(STORE_FOLDERS, { keyPath: 'id' });
         }
-        // Cloud Links Store
-        if (!database.objectStoreNames.contains(STORE_CLOUD_LINKS)) {
-          database.createObjectStore(STORE_CLOUD_LINKS, { keyPath: 'id' });
-        }
+        // NOTE: Cloud links are now stored in Firebase Firestore, NOT IndexedDB
       };
     });
   }
@@ -2567,38 +2604,58 @@ body {
     });
   }
 
-  // Cloud Links Store Methods
-  function saveCloudLinkToDB(record) {
-    return new Promise((resolve) => {
-      if (!db) return resolve(false);
-      const transaction = db.transaction([STORE_CLOUD_LINKS], 'readwrite');
-      const store = transaction.objectStore(STORE_CLOUD_LINKS);
-      const request = store.put(record);
-      request.onsuccess = () => resolve(true);
-      request.onerror = () => resolve(false);
-    });
+  // =====================================================================
+  // Cloud Links — Firebase Firestore (Online Storage)
+  // =====================================================================
+
+  async function saveCloudLinkToDB(record) {
+    try {
+      await waitForFirebase();
+      // Firestore cannot store File handles or undefined values — strip metadata thumbnail if base64
+      const safeRecord = JSON.parse(JSON.stringify(record, (key, val) => {
+        if (val === undefined) return null;
+        // Avoid storing huge base64 thumbnails in Firestore (keep URL strings only)
+        if (key === 'thumbnail' && typeof val === 'string' && val.startsWith('data:')) return null;
+        return val;
+      }));
+      const colRef = window._fbCollection(window._fbFirestore, FIRESTORE_CLOUD_COLLECTION);
+      const docRef = window._fbDoc(colRef, safeRecord.id);
+      await window._fbSetDoc(docRef, safeRecord);
+      return true;
+    } catch (err) {
+      console.error('Firestore saveCloudLink error:', err);
+      showToast('Cloud save failed. Check internet connection.', 'error');
+      return false;
+    }
   }
 
-  function removeCloudLinkFromDB(linkId) {
-    return new Promise((resolve) => {
-      if (!db) return resolve(false);
-      const transaction = db.transaction([STORE_CLOUD_LINKS], 'readwrite');
-      const store = transaction.objectStore(STORE_CLOUD_LINKS);
-      const request = store.delete(linkId);
-      request.onsuccess = () => resolve(true);
-      request.onerror = () => resolve(false);
-    });
+  async function removeCloudLinkFromDB(linkId) {
+    try {
+      await waitForFirebase();
+      const colRef = window._fbCollection(window._fbFirestore, FIRESTORE_CLOUD_COLLECTION);
+      const docRef = window._fbDoc(colRef, linkId);
+      await window._fbDeleteDoc(docRef);
+      return true;
+    } catch (err) {
+      console.error('Firestore removeCloudLink error:', err);
+      showToast('Failed to remove cloud link from server.', 'error');
+      return false;
+    }
   }
 
-  function getAllCloudLinksFromDB() {
-    return new Promise((resolve) => {
-      if (!db) return resolve([]);
-      const transaction = db.transaction([STORE_CLOUD_LINKS], 'readonly');
-      const store = transaction.objectStore(STORE_CLOUD_LINKS);
-      const request = store.getAll();
-      request.onsuccess = () => resolve(request.result || []);
-      request.onerror = () => resolve([]);
-    });
+  async function getAllCloudLinksFromDB() {
+    try {
+      await waitForFirebase();
+      const colRef = window._fbCollection(window._fbFirestore, FIRESTORE_CLOUD_COLLECTION);
+      const snapshot = await window._fbGetDocs(colRef);
+      const links = [];
+      snapshot.forEach(docSnap => links.push(docSnap.data()));
+      return links;
+    } catch (err) {
+      console.error('Firestore getAllCloudLinks error:', err);
+      showToast('Failed to load cloud links from server.', 'error');
+      return [];
+    }
   }
 
   // --- Internet Connectivity Detection ---
@@ -4515,23 +4572,6 @@ ${activeTags.join(', ')}`;
 })();
 
 </script>
-<!-- Firebase Initialization -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyCruuZ0o02CPH1EmsRc6cWUT9rdw5Lat1o",
-    authDomain: "vidiflow-402fb.firebaseapp.com",
-    projectId: "vidiflow-402fb",
-    storageBucket: "vidiflow-402fb.firebasestorage.app",
-    messagingSenderId: "128189158696",
-    appId: "1:128189158696:web:e76e2f0bd4d00748226c1d",
-    measurementId: "G-25803JS38S"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const analytics = getAnalytics(app);
-</script>
+<!-- Firebase is initialized in <head> as a module script above -->
 </body>
 </html>
